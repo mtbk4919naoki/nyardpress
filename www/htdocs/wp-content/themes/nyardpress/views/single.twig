@@ -1,0 +1,69 @@
+{% extends "base.twig" %}
+
+{% block content %}
+    <article id="post-{{ post.ID }}" class="post post-{{ post.post_type }}">
+        <header class="entry-header">
+            <h1 class="entry-title">{{ post.title }}</h1>
+            <div class="entry-meta">
+                <span class="posted-on">
+                    <time class="entry-date published" datetime="{{ post.date('Y-m-d\\TH:i:s') }}">
+                        {{ post.date }}
+                    </time>
+                </span>
+                <span class="byline">
+                    投稿者: <span class="author">{{ post.author.name }}</span>
+                </span>
+            </div>
+        </header>
+
+        {% if post.thumbnail %}
+            <div class="post-thumbnail">
+                <img src="{{ post.thumbnail.src('nyardpress-large') }}" alt="{{ post.title }}">
+            </div>
+        {% endif %}
+
+        <div class="entry-content">
+            {{ post.content }}
+        </div>
+
+        <footer class="entry-footer">
+            {% if post.terms('category') %}
+                <span class="cat-links">
+                    カテゴリー: 
+                    {% for term in post.terms('category') %}
+                        <a href="{{ term.link }}">{{ term.name }}</a>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </span>
+            {% endif %}
+            
+            {% if post.terms('post_tag') %}
+                <span class="tags-links">
+                    タグ: 
+                    {% for term in post.terms('post_tag') %}
+                        <a href="{{ term.link }}">{{ term.name }}</a>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </span>
+            {% endif %}
+        </footer>
+    </article>
+
+    {% if post.prev or post.next %}
+        <nav class="post-navigation">
+            {% if post.prev %}
+                <div class="nav-previous">
+                    <a href="{{ post.prev.link }}" rel="prev">
+                        <span class="meta-nav">&larr;</span> {{ post.prev.title }}
+                    </a>
+                </div>
+            {% endif %}
+            {% if post.next %}
+                <div class="nav-next">
+                    <a href="{{ post.next.link }}" rel="next">
+                        {{ post.next.title }} <span class="meta-nav">&rarr;</span>
+                    </a>
+                </div>
+            {% endif %}
+        </nav>
+    {% endif %}
+{% endblock %}
+

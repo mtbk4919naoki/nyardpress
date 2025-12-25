@@ -1,0 +1,92 @@
+# ============================================
+# Git Attributes設定
+# ============================================
+
+# ============================================
+# 改行コードの自動変換
+# ============================================
+# テキストファイルは自動的に改行コードを統一
+* text=auto
+
+# 明示的にLFを使用するファイル
+*.php text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+*.html text eol=lf
+*.htm text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+*.gitignore text eol=lf
+*.gitattributes text eol=lf
+*.editorconfig text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+.dockerignore text eol=lf
+
+# ============================================
+# バイナリファイル
+# ============================================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.gz binary
+*.rar binary
+*.7z binary
+
+# ============================================
+# 言語別の設定
+# ============================================
+# PHP
+*.php diff=php
+*.php linguist-language=PHP
+
+# JavaScript
+*.js diff=javascript
+*.js linguist-language=JavaScript
+
+# TypeScript
+*.ts diff=typescript
+*.tsx diff=typescript
+*.ts linguist-language=TypeScript
+*.tsx linguist-language=TypeScript
+
+# CSS
+*.css diff=css
+*.css linguist-language=CSS
+
+# JSON
+*.json diff=json
+*.json linguist-language=JSON
+
+# Markdown
+*.md diff=markdown
+*.md linguist-language=Markdown
+
+# ============================================
+# 生成ファイル（diffを取らない）
+# ============================================
+composer.lock -diff
+package-lock.json -diff
+yarn.lock -diff
+

@@ -1,0 +1,70 @@
+{% extends "base.twig" %}
+
+{% block content %}
+    <header class="page-header">
+        <h1 class="page-title">{{ title }}</h1>
+        {% if site.description %}
+            <div class="archive-description">{{ site.description }}</div>
+        {% endif %}
+    </header>
+
+    <div class="posts-container">
+        {% if posts %}
+            {% for post in posts %}
+                <article id="post-{{ post.ID }}" class="post post-{{ post.post_type }}">
+                    <header class="entry-header">
+                        <h2 class="entry-title">
+                            <a href="{{ post.link }}">{{ post.title }}</a>
+                        </h2>
+                        <div class="entry-meta">
+                            <span class="posted-on">
+                                <time class="entry-date published" datetime="{{ post.date('Y-m-d\\TH:i:s') }}">
+                                    {{ post.date }}
+                                </time>
+                            </span>
+                        </div>
+                    </header>
+
+                    {% if post.thumbnail %}
+                        <div class="post-thumbnail">
+                            <a href="{{ post.link }}">
+                                <img src="{{ post.thumbnail.src('nyardpress-medium') }}" alt="{{ post.title }}">
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <div class="entry-content">
+                        {{ post.excerpt.length(55).read_more('続きを読む') }}
+                    </div>
+                </article>
+            {% endfor %}
+
+            {% if pagination %}
+                <nav class="pagination">
+                    {% if pagination.prev %}
+                        <a href="{{ pagination.prev.link }}" class="prev">« 前へ</a>
+                    {% endif %}
+                    {% if pagination.pages %}
+                        <ul class="pages">
+                            {% for page in pagination.pages %}
+                                <li>
+                                    {% if page.current %}
+                                        <span class="current">{{ page.title }}</span>
+                                    {% else %}
+                                        <a href="{{ page.link }}" class="{{ page.class }}">{{ page.title }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if pagination.next %}
+                        <a href="{{ pagination.next.link }}" class="next">次へ »</a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        {% else %}
+            <p>投稿が見つかりませんでした。</p>
+        {% endif %}
+    </div>
+{% endblock %}
+

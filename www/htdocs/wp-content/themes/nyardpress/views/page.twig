@@ -1,0 +1,20 @@
+{% extends "base.twig" %}
+
+{% block content %}
+    <article id="post-{{ post.ID }}" class="page page-{{ post.slug }}">
+        <header class="entry-header">
+            <h1 class="entry-title">{{ post.title }}</h1>
+        </header>
+
+        {% if post.thumbnail %}
+            <div class="page-thumbnail">
+                <img src="{{ post.thumbnail.src('nyardpress-large') }}" alt="{{ post.title }}">
+            </div>
+        {% endif %}
+
+        <div class="entry-content">
+            {{ post.content }}
+        </div>
+    </article>
+{% endblock %}
+

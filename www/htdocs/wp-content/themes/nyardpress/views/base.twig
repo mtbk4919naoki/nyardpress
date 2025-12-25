@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html {{ site.language_attributes }}>
+<head>
+    <meta charset="{{ site.charset }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="profile" href="https://gmpg.org/xfn/11">
+    {{ function('wp_head') }}
+</head>
+<body {{ function('body_class') }}>
+    <div id="page" class="site">
+        <header id="masthead" class="site-header">
+            <div class="site-branding">
+                {% if site.logo %}
+                    <a href="{{ site.url }}" class="custom-logo-link">
+                        <img src="{{ site.logo.src }}" alt="{{ site.name }}" class="custom-logo">
+                    </a>
+                {% else %}
+                    <h1 class="site-title">
+                        <a href="{{ site.url }}" rel="home">{{ site.name }}</a>
+                    </h1>
+                {% endif %}
+                {% if site.description %}
+                    <p class="site-description">{{ site.description }}</p>
+                {% endif %}
+            </div>
+            
+            <nav id="site-navigation" class="main-navigation">
+                {% if menu %}
+                    <ul class="nav-menu">
+                        {% for item in menu.items %}
+                            <li class="menu-item menu-item-{{ item.slug }}{% if item.current %} current-menu-item{% endif %}">
+                                <a href="{{ item.url }}">{{ item.title }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </nav>
+        </header>
+
+        <main id="main" class="site-main">
+            {% block content %}
+            {% endblock %}
+        </main>
+
+        <footer id="colophon" class="site-footer">
+            <div class="site-info">
+                <p>&copy; {{ "now"|date("Y") }} {{ site.name }}. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+    {{ function('wp_footer') }}
+</body>
+</html>
+

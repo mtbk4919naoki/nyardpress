@@ -1,0 +1,20 @@
+{
+  "name": "nyardpress/theme",
+  "description": "Nyardpress theme with Timber",
+  "type": "wordpress-theme",
+  "require": {
+    "php": ">=7.4",
+    "timber/timber": "2.3.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "Nyardpress\\Theme\\": "src/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  }
+}
+

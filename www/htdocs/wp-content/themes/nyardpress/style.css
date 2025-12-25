@@ -1,0 +1,282 @@
+/*
+Theme Name: Nyardpress
+Theme URI: https://github.com/nyardpress/nyardpress
+Author: Nyardpress
+Author URI: https://github.com/nyardpress
+Description: WordPress theme built with Timber and Twig
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: nyardpress
+Tags: timber, twig, modern
+*/
+
+/* リセットとベーススタイル */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #fff;
+}
+
+/* サイトヘッダー */
+.site-header {
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 1rem 0;
+}
+
+.site-branding {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.site-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.site-title a {
+    text-decoration: none;
+    color: #333;
+}
+
+.site-description {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.custom-logo-link {
+    display: inline-block;
+}
+
+.custom-logo {
+    max-height: 100px;
+    width: auto;
+}
+
+/* メインナビゲーション */
+.main-navigation {
+    max-width: 1200px;
+    margin: 1rem auto 0;
+    padding: 0 1rem;
+}
+
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: #333;
+    transition: color 0.3s;
+}
+
+.nav-menu a:hover {
+    color: #0073aa;
+}
+
+.nav-menu .current-menu-item a {
+    font-weight: bold;
+    color: #0073aa;
+}
+
+/* メインコンテンツ */
+.site-main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* 投稿一覧 */
+.posts-container {
+    display: grid;
+    gap: 2rem;
+}
+
+.post {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+}
+
+.post:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.entry-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.entry-title a {
+    text-decoration: none;
+    color: #333;
+    transition: color 0.3s;
+}
+
+.entry-title a:hover {
+    color: #0073aa;
+}
+
+.entry-meta {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.entry-meta span {
+    margin-right: 1rem;
+}
+
+.post-thumbnail,
+.page-thumbnail {
+    margin-bottom: 1rem;
+}
+
+.post-thumbnail img,
+.page-thumbnail img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.entry-content {
+    margin-bottom: 1rem;
+}
+
+.entry-content p {
+    margin-bottom: 1rem;
+}
+
+.entry-content a {
+    color: #0073aa;
+    text-decoration: underline;
+}
+
+.entry-footer {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 1rem;
+}
+
+.entry-footer span {
+    margin-right: 1rem;
+}
+
+.entry-footer a {
+    color: #0073aa;
+    text-decoration: none;
+}
+
+/* ページヘッダー */
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.archive-description {
+    color: #666;
+}
+
+/* 投稿ナビゲーション */
+.post-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.nav-previous,
+.nav-next {
+    flex: 1;
+}
+
+.nav-previous {
+    text-align: left;
+}
+
+.nav-next {
+    text-align: right;
+}
+
+.post-navigation a {
+    color: #0073aa;
+    text-decoration: none;
+}
+
+.post-navigation a:hover {
+    text-decoration: underline;
+}
+
+/* パagination */
+.pagination {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+/* 404ページ */
+.error-404 {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.error-404 .page-title {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.search-form {
+    margin-top: 2rem;
+}
+
+/* フッター */
+.site-footer {
+    background: #f5f5f5;
+    padding: 2rem 0;
+    margin-top: 4rem;
+    text-align: center;
+}
+
+.site-info {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .nav-menu {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .post-navigation {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-previous,
+    .nav-next {
+        text-align: center;
+    }
+}
+

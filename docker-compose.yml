@@ -1,0 +1,85 @@
+# ============================================
+# Docker Compose設定ファイル
+# ============================================
+# 注意: コンテナ名、ボリューム名、ネットワーク名は固定値です
+# 複数のプロジェクトで同じコンテナ名を使用する場合は競合する可能性があります
+# 別のプロジェクトで使用する場合は、コンテナ名を変更してください
+# ============================================
+
+services:
+  # MySQLデータベースコンテナ
+  db:
+    image: mysql:8.0
+    # コンテナ名: 固定値（安定性重視）
+    container_name: nyardpress_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
+      MYSQL_USER: ${MYSQL_USER:-wordpress}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    volumes:
+      # ボリューム名: 固定値（データベースのデータを永続化）
+      - nyardpress_db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      # ネットワーク名: 固定値
+      - nyardpress-network
+
+  # WordPressコンテナ
+  wordpress:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    # コンテナ名: 固定値（安定性重視）
+    container_name: nyardpress_wordpress
+    restart: always
+    env_file:
+      - ./env/.env
+    ports:
+      # ポート: .envファイルで変更可能（デフォルト: 8080）
+      - "${WORDPRESS_PORT:-8080}:80"
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST:-db}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost:8080}
+      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-Nyardpress}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin}
+      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    volumes:
+      # テーマディレクトリをマウント
+      - ./www/htdocs/wp-content/themes:/var/www/html/wp-content/themes
+      # MUプラグイン（site-core）をマウント
+      - ./www/htdocs/wp-content/mu-plugins/site-core:/var/www/html/wp-content/mu-plugins/site-core
+      # 必要に応じて個別に追加してください
+      # - ./www/htdocs/custom-folder:/var/www/html/custom-folder
+    depends_on:
+      - db
+    networks:
+      # ネットワーク名: 固定値
+      - nyardpress-network
+
+# ============================================
+# ボリューム定義
+# ============================================
+# データベースのデータを永続化するためのボリューム
+# ボリューム名: nyardpress_db_data（固定値）
+# ============================================
+volumes:
+  nyardpress_db_data:
+
+# ============================================
+# ネットワーク定義
+# ============================================
+# コンテナ間通信のためのネットワーク
+# ネットワーク名: nyardpress-network（固定値）
+# ============================================
+networks:
+  nyardpress-network:
+    driver: bridge
+

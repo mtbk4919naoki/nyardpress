@@ -1,0 +1,14 @@
+{
+  "name": "nyardpress",
+  "version": "1.0.0",
+  "description": "WordPress development environment",
+  "scripts": {
+    "dev": "node env/dev.js",
+    "setup:env": "node env/setup-env.js",
+    "dc:destroy": "node env/dc-destory.js",
+    "dc:flush": "node env/dc-flush.js",
+    "dc:build": "node env/dc-build.js"
+  },
+  "private": true
+}
+

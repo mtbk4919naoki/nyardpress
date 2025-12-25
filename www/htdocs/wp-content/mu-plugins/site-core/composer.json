@@ -1,0 +1,23 @@
+{
+  "name": "nyardpress/site-core",
+  "description": "Site core functionality with custom post types, taxonomies, and Carbon Fields",
+  "type": "wordpress-muplugin",
+  "require": {
+    "php": ">=7.4",
+    "htmlburger/carbon-fields": "^3.6"
+  },
+  "autoload": {
+    "psr-4": {
+      "SiteCore\\": "src/"
+    },
+    "files": [
+      "bootstrap/carbon-fields.php"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  }
+}
+
