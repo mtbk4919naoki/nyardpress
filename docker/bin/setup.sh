@@ -147,6 +147,11 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     wp config set WP_DEBUG_LOG_FILE "$WP_ROOT/wp-content/debug.log" --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOG_FILEの設定に失敗しました"
     wp config set SCRIPT_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  SCRIPT_DEBUGの設定に失敗しました"
 
+    # WordPressのアップデート時にデフォルトテーマが再インストールされるのを防ぐ
+    if ! wp config has CORE_UPGRADE_SKIP_NEW_BUNDLED --allow-root --path="$WP_ROOT" 2>/dev/null; then
+        wp config set CORE_UPGRADE_SKIP_NEW_BUNDLED true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  CORE_UPGRADE_SKIP_NEW_BUNDLEDの設定に失敗しました"
+    fi
+
     # PHPエラーログを標準出力にも出力するように設定
     # wp-config.phpに直接追加
     if ! grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
@@ -235,14 +240,85 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     echo "日本語言語パックをインストール中..."
     wp language core install ja --activate --allow-root --path="$WP_ROOT" || echo "日本語言語パックのインストールに失敗しました"
 
-    # wordpress-seoプラグインのインストールとアクティベート
-    echo "wordpress-seoプラグインをインストール中..."
-    wp plugin install wordpress-seo --activate --allow-root --path="$WP_ROOT" || echo "wordpress-seoプラグインのインストールに失敗しました"
+    # デフォルトプラグイン（Akismet、HelloDolly）を先に削除
+    echo "デフォルトプラグインを削除中..."
+    PLUGINS_DIR="$WP_ROOT/wp-content/plugins"
+    if [ -d "$PLUGINS_DIR" ]; then
+        # Akismetプラグインを削除
+        if [ -d "$PLUGINS_DIR/akismet" ] || wp plugin is-installed akismet --allow-root --path="$WP_ROOT" 2>/dev/null; then
+            echo "  - akismetを削除中..."
+            wp plugin delete akismet --allow-root --path="$WP_ROOT" 2>/dev/null || rm -rf "$PLUGINS_DIR/akismet" 2>/dev/null || echo "    ⚠️  akismetの削除に失敗しました"
+        fi
+
+        # HelloDollyプラグインを削除
+        if [ -f "$PLUGINS_DIR/hello.php" ] || wp plugin is-installed hello --allow-root --path="$WP_ROOT" 2>/dev/null; then
+            echo "  - hello-dollyを削除中..."
+            wp plugin delete hello --allow-root --path="$WP_ROOT" 2>/dev/null || rm -f "$PLUGINS_DIR/hello.php" 2>/dev/null || echo "    ⚠️  hello-dollyの削除に失敗しました"
+        fi
+        echo "✅ デフォルトプラグインの削除が完了しました"
+    fi
+
+    # 標準プラグインのインストールとアクティベート
+    echo ""
+    echo "標準プラグインをインストール中..."
+
+    # プラグインリストを定義
+    PLUGINS=(
+        "wp-multibyte-patch"
+        "wp-mail-smtp"
+        "wordpress-seo"
+        "simple-page-ordering"
+        "taxonomy-terms-order"
+        "ewww-image-optimizer"
+        "wordfence"
+        "w3-total-cache"
+        "wp-crontrol"
+        "query-monitor"
+    )
+
+    # 各プラグインをインストール
+    for plugin in "${PLUGINS[@]}"; do
+        echo "  - $plugin"
+        # プラグインが既にインストールされているか確認
+        if wp plugin is-installed "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
+            echo "    ℹ️  $pluginは既にインストールされています"
+            # アクティベート（既にアクティブでない場合）
+            wp plugin activate "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null || echo "    ⚠️  $pluginのアクティベートに失敗しました"
+        else
+            # プラグインをインストールしてアクティベート
+            if wp plugin install "$plugin" --activate --allow-root --path="$WP_ROOT" 2>/dev/null; then
+                echo "    ✅ $pluginのインストールが完了しました"
+            else
+                echo "    ⚠️  $pluginのインストールに失敗しました"
+            fi
+        fi
+    done
+
+    echo ""
+    echo "✅ 標準プラグインのインストールが完了しました"
 
     # テーマをアクティベート
     THEME_NAME="${THEME_NAME:-nyardpress}"
     echo "${THEME_NAME}テーマをアクティベート中..."
     wp theme activate "$THEME_NAME" --allow-root --path="$WP_ROOT" || echo "${THEME_NAME}テーマのアクティベートに失敗しました（テーマが存在しない可能性があります）"
+
+    # デフォルトテーマ（twenty*系）を削除
+    # マウントポイントでは、ホスト側に存在するディレクトリは保持され、存在しないディレクトリ（コンテナ内で作成されたもの）のみ削除される
+    echo "デフォルトテーマ（twenty*系）を削除中..."
+    THEMES_DIR="$WP_ROOT/wp-content/themes"
+    if [ -d "$THEMES_DIR" ]; then
+        # twenty*で始まるテーマディレクトリを検索して削除
+        find "$THEMES_DIR" -maxdepth 1 -type d -name "twenty*" 2>/dev/null | while IFS= read -r theme_dir; do
+            if [ -n "$theme_dir" ] && [ -d "$theme_dir" ]; then
+                theme_basename=$(basename "$theme_dir")
+                echo "  削除中: $theme_basename"
+                rm -rf "$theme_dir" || echo "  ⚠️  $theme_basenameの削除に失敗しました"
+            fi
+        done || true
+        echo "✅ デフォルトテーマの削除が完了しました"
+    else
+        echo "⚠️  テーマディレクトリが見つかりません: $THEMES_DIR"
+    fi
 
     echo "WordPressの設定が完了しました"
 else

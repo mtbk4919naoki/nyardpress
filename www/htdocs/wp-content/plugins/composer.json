@@ -1,0 +1,40 @@
+{
+  "name": "nyardpress/wordpress",
+  "description": "WordPress development environment with plugins",
+  "type": "project",
+  "require": {
+    "php": ">=8.0",
+    "composer/installers": "^2.0"
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    }
+  ],
+  "extra": {
+    "installer-paths": {
+      "{$name}/": [
+        "type:wordpress-plugin"
+      ]
+    }
+  },
+  "require-dev": {
+    "wpackagist-plugin/wordpress-seo": "*",
+    "wpackagist-plugin/wp-multibyte-patch": "*",
+    "wpackagist-plugin/query-monitor": "*",
+    "wpackagist-plugin/cloudsecure-wp-security": "*",
+    "wpackagist-plugin/wp-crontrol": "*",
+    "wpackagist-plugin/taxonomy-terms-order": "*",
+    "wpackagist-plugin/simple-page-ordering": "*",
+    "wpackagist-plugin/wp-mail-smtp": "*",
+    "wpackagist-plugin/w3-total-cache": "*",
+    "wpackagist-plugin/ewww-image-optimizer": "*"
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  }
+}
+

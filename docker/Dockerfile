@@ -1,10 +1,10 @@
 FROM wordpress:php8.2-apache
 
 RUN apt-get update \
-    && apt-get -y install vim zip unzip default-mysql-client \
+    && apt-get -y install default-mysql-client \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer --version
-    
+
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp \
@@ -28,6 +28,13 @@ RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-php-debug.ini && 
     echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-debug.ini && \
     echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/docker-php-debug.ini && \
     echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/docker-php-debug.ini
+
+# アップロードファイルサイズの上限を1024MBに設定
+RUN echo "upload_max_filesize = 1024M" >> /usr/local/etc/php/conf.d/docker-php-upload.ini && \
+    echo "post_max_size = 1024M" >> /usr/local/etc/php/conf.d/docker-php-upload.ini && \
+    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/docker-php-upload.ini && \
+    echo "max_input_time = 300" >> /usr/local/etc/php/conf.d/docker-php-upload.ini && \
+    echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/docker-php-upload.ini
 
 # カスタムエントリーポイントを設定
 ENTRYPOINT ["/usr/docker/bin/docker-entrypoint.sh"]

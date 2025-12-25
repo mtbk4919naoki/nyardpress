@@ -49,7 +49,21 @@ npm run dc:build
 - テーマのアクティベート
 - Composer依存関係のインストール
 
-### 3. アクセス
+### 3. データベースの復元（途中から参加したメンバー向け）
+
+既存のダンプファイルがある場合は、データベースとメディアファイルを復元します：
+
+```bash
+# 利用可能なダンプファイルを確認
+ls docker/dump/*.tar.gz
+
+# ダンプファイルを復元（ファイル名から拡張子を除いた名前を指定）
+npm run dc:restore wordpress_dump_20251225_132220
+```
+
+**注意：** ダンプファイルがない場合は、この手順をスキップして次に進んでください。
+
+### 4. アクセス
 
 ブラウザで `http://localhost:8080` にアクセスしてください。
 
@@ -66,12 +80,12 @@ nyardpress/
 │   ├── .env.sample          # 環境変数テンプレート
 │   ├── setup-env.js         # 環境変数セットアップ
 │   ├── dc-build.js          # Docker Composeビルド
-│   ├── dc-destory.js        # Docker Compose削除
-│   └── dc-flush.js          # ボリュームとキャッシュのクリア
+│   └── dc-destory.js        # Docker Compose削除
 ├── www/htdocs/               # WordPressドキュメントルート
 │   ├── wp-content/
 │   │   ├── themes/
 │   │   │   └── nyardpress/  # カスタムテーマ（Timber使用）
+│   │   ├── plugins/         # プラグインディレクトリ（マウント済み、永続化）
 │   │   ├── mu-plugins/
 │   │   │   └── site-core/   # MUプラグイン
 │   │   │       ├── posttypes/    # カスタム投稿タイプ
@@ -98,11 +112,21 @@ npm run setup:env
 # コンテナのビルドと起動
 npm run dc:build
 
-# コンテナの停止と削除
+# コンテナの停止と削除（ボリュームも削除）
 npm run dc:destroy
+```
 
-# ボリュームとキャッシュのクリア（データベースもリセット）
-npm run dc:flush
+### データベースのダンプと復元
+
+```bash
+# データベースとメディアファイルをダンプ
+npm run dc:dump
+
+# ダンプ名を指定してダンプ（オプション）
+npm run dc:dump production
+
+# ダンプファイルを復元
+npm run dc:restore wordpress_dump_20251225_132220
 ```
 
 ### 開発用コマンド（今後実装予定）
@@ -273,15 +297,19 @@ safe_log('エラーメッセージ', 'error', ['context' => 'value']);
 ### データベース接続エラー
 
 ```bash
-# ボリュームをクリアして再起動
-npm run dc:flush
+# コンテナとボリュームを削除して再ビルド
+npm run dc:destroy
+npm run dc:build
 ```
 
 ### セットアップが実行されない
 
 ```bash
-# セットアップフラグを削除して再実行
-rm www/htdocs/.setup-completed
+# WordPressのインストール状態を確認
+docker exec -it nyardpress_wordpress wp core is-installed --allow-root
+
+# 未インストールの場合は、wp-config.phpを削除して再起動
+docker exec -it nyardpress_wordpress rm /var/www/html/wp-config.php
 docker-compose restart wordpress
 ```
 

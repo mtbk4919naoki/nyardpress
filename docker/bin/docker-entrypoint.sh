@@ -1,7 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
+# WordPressの標準エントリーポイントを実行する前に、
+# wp core downloadが実行される場合に備えて、--skip-themesオプションを設定
+# 環境変数で制御できないため、WordPressの標準エントリーポイントを実行
+# その後、twenty系テーマを削除する処理を追加
+
 # WordPressの標準エントリーポイントを実行（wp-config.phpの生成など）
+# 注意: WordPressの公式イメージは、/var/www/htmlが空の場合にwp core downloadを実行します
+# その際、--skip-themesオプションは使えないため、後で削除します
 docker-entrypoint.sh "$@" &
 WP_PID=$!
 
@@ -59,21 +66,81 @@ for i in {1..30}; do
     sleep 1
 done
 
+# WordPressの標準エントリーポイントでwp core downloadが実行された場合、
+# twenty系テーマとデフォルトプラグインがダウンロードされる可能性があるため、削除する
+# この処理はsetup.shの実行前後に関係なく実行する
+
+# デフォルトテーマ（twenty*系）を削除
+echo "デフォルトテーマ（twenty*系）を削除中..."
+THEMES_DIR="/var/www/html/wp-content/themes"
+if [ -d "$THEMES_DIR" ]; then
+    # twenty*で始まるテーマディレクトリを検索して削除
+    find "$THEMES_DIR" -maxdepth 1 -type d -name "twenty*" 2>/dev/null | while IFS= read -r theme_dir; do
+        if [ -n "$theme_dir" ] && [ -d "$theme_dir" ]; then
+            theme_basename=$(basename "$theme_dir")
+            echo "  削除中: $theme_basename"
+            rm -rf "$theme_dir" || echo "  ⚠️  $theme_basenameの削除に失敗しました"
+        fi
+    done || true
+    echo "✅ デフォルトテーマの削除が完了しました"
+fi
+
+# デフォルトプラグイン（Akismet、HelloDolly）を削除
+echo "デフォルトプラグイン（Akismet、HelloDolly）を削除中..."
+PLUGINS_DIR="/var/www/html/wp-content/plugins"
+if [ -d "$PLUGINS_DIR" ]; then
+    # Akismetプラグインを削除
+    if [ -d "$PLUGINS_DIR/akismet" ]; then
+        echo "  削除中: akismet"
+        rm -rf "$PLUGINS_DIR/akismet" || echo "  ⚠️  akismetの削除に失敗しました"
+    fi
+
+    # HelloDollyプラグインを削除
+    if [ -f "$PLUGINS_DIR/hello.php" ]; then
+        echo "  削除中: hello-dolly"
+        rm -f "$PLUGINS_DIR/hello.php" || echo "  ⚠️  hello-dollyの削除に失敗しました"
+    fi
+    echo "✅ デフォルトプラグインの削除が完了しました"
+fi
+
 # setup.shを実行（初回起動時のみ）
+# WordPressのインストール状態を直接確認（wp core is-installedで判定）
 if [ -f /usr/docker/bin/setup.sh ]; then
-    if [ -f /var/www/html/.setup-completed ]; then
-        echo "ℹ️  setup.shは既に実行済みです（.setup-completedフラグが存在します）"
-        echo "   再実行する場合は、.setup-completedフラグを削除してください"
+    # WordPressのインストール状態を確認（データベース接続が必要）
+    # wp-config.phpが存在し、WordPressがインストール済みか確認
+    if [ -f /var/www/html/wp-config.php ]; then
+        # wp core is-installedで判定（データベース接続が必要なので、接続確認後に実行）
+        if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
+            echo "ℹ️  WordPressは既にインストール済みです（setup.shをスキップします）"
+        else
+            echo "=========================================="
+            echo "🚀 WordPressが未インストールのため、setup.shを実行中..."
+            echo "=========================================="
+            set +e  # エラーで停止しないようにする
+            /usr/docker/bin/setup.sh
+            setup_exit_code=$?
+            set -e
+            if [ $setup_exit_code -eq 0 ]; then
+                echo "=========================================="
+                echo "✅ setup.shの実行が完了しました"
+                echo "=========================================="
+            else
+                echo "=========================================="
+                echo "⚠️  setup.shの実行に失敗しました (終了コード: $setup_exit_code)"
+                echo "   次回起動時に再試行されます"
+                echo "=========================================="
+            fi
+        fi
     else
+        # wp-config.phpが存在しない場合は、確実に未インストール
         echo "=========================================="
-        echo "🚀 setup.shを実行中..."
+        echo "🚀 WordPressが未インストールのため、setup.shを実行中..."
         echo "=========================================="
         set +e  # エラーで停止しないようにする
         /usr/docker/bin/setup.sh
         setup_exit_code=$?
         set -e
         if [ $setup_exit_code -eq 0 ]; then
-            touch /var/www/html/.setup-completed
             echo "=========================================="
             echo "✅ setup.shの実行が完了しました"
             echo "=========================================="

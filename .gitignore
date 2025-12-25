@@ -96,12 +96,22 @@ Thumbs.db
 # www/htdocs/wp-content/uploads/
 
 # ============================================
-# セットアップ完了フラグ
+# WordPressプラグイン
 # ============================================
-www/htdocs/.setup-completed
+# プラグインはマウントされているため、インストールされたプラグインは永続化されます
+# プラグインディレクトリ全体を除外（.gitkeepは含める）
+www/htdocs/wp-content/plugins/*
+!www/htdocs/wp-content/plugins/.gitkeep
+
 
 # ============================================
 # Docker関連
 # ============================================
 .docker/
+# ダンプファイル（エクスポートされたファイル）
+docker/dump/*.tar.gz
+docker/dump/sql/*.sql
+docker/dump/uploads/*
+!docker/dump/sql/.gitkeep
+!docker/dump/uploads/.gitkeep
 
