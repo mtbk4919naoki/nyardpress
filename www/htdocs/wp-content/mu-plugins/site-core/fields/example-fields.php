@@ -52,7 +52,7 @@ function add_example_custom_fields() {
                 ->set_help_text('サンプルの日付フィールドです'),
         ));
 }
-//add_action('carbon_fields_register_fields', 'add_example_custom_fields');
+add_action('carbon_fields_register_fields', 'add_example_custom_fields');
 
 /**
  * タクソノミー 'example_category' にカスタムフィールドを追加
@@ -88,6 +88,5 @@ function add_example_options_fields() {
                 ->set_help_text('サイトのロゴ画像を設定します'),
         ));
 }
-// オプションページが必要な場合はコメントアウトを外してください
-// add_action('carbon_fields_register_fields', 'add_example_options_fields');
+add_action('carbon_fields_register_fields', 'add_example_options_fields');
 

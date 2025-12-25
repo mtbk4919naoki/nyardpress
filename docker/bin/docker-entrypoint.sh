@@ -186,7 +186,31 @@ if [ -f /usr/docker/bin/setup.sh ]; then
     if [ -f /var/www/html/wp-config.php ]; then
         # wp core is-installedで判定（データベース接続が必要なので、接続確認後に実行）
         if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
-            echo "ℹ️  WordPressは既にインストール済みです（setup.shをスキップします）"
+            echo "ℹ️  WordPressは既にインストール済みです"
+            # 日本語化の処理だけは毎回実行（再起動時に英語に戻るのを防ぐ）
+            echo "日本語言語パックを設定中..."
+            # データベース接続を確認してから実行
+            if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
+                # 日本語パックをインストール（既にインストール済みの場合は更新）
+                wp language core install ja --allow-root --path="/var/www/html" 2>&1 | grep -v "already installed" || true
+                # サイトの言語を日本語に切り替え（非推奨のactivateの代わり）
+                wp site switch-language ja --allow-root --path="/var/www/html" 2>&1 || {
+                    # フォールバック: 古いコマンドを使用
+                    wp language core activate ja --allow-root --path="/var/www/html" 2>&1 || true
+                }
+                # WPLANGオプションも明示的に設定
+                wp option update WPLANG ja --allow-root --path="/var/www/html" 2>&1 || true
+                # 管理ユーザーの言語設定も日本語に変更
+                ADMIN_USER="${WORDPRESS_ADMIN_USER:-nyardpress}"
+                ADMIN_USER_ID=$(wp user get "$ADMIN_USER" --allow-root --path="/var/www/html" --field=ID 2>/dev/null || echo "")
+                if [ -n "$ADMIN_USER_ID" ]; then
+                    wp user update "$ADMIN_USER" --locale=ja --allow-root --path="/var/www/html" 2>&1 || true
+                    wp user meta update "$ADMIN_USER_ID" locale ja --allow-root --path="/var/www/html" 2>&1 || true
+                fi
+                echo "✅ 日本語言語パックを設定しました"
+            else
+                echo "⚠️  データベース接続が確立されていないため、日本語化をスキップします"
+            fi
         else
             echo "=========================================="
             echo "🚀 WordPressが未インストールのため、setup.shを実行中..."

@@ -58,8 +58,8 @@ services:
       - ./www/htdocs/wp-content/themes:/var/www/html/wp-content/themes
       # プラグインディレクトリをマウント（永続化、composer.jsonでプラグイン管理）
       - ./www/htdocs/wp-content/plugins:/var/www/html/wp-content/plugins
-      # MUプラグイン（site-core）をマウント
-      - ./www/htdocs/wp-content/mu-plugins/site-core:/var/www/html/wp-content/mu-plugins/site-core
+      # MUプラグインディレクトリをマウント
+      - ./www/htdocs/wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
       # ダンプディレクトリをマウント（エクスポート/インポート用）
       - ./docker/dump:/var/www/html/docker/dump
       # 必要に応じて個別に追加してください

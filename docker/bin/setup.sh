@@ -268,9 +268,24 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     wp rewrite structure '/%postname%/' --allow-root --path="$WP_ROOT" || echo "パーマリンク構造の設定に失敗しました"
     wp rewrite flush --allow-root --path="$WP_ROOT" || echo "パーマリンクのフラッシュに失敗しました"
 
-    # 日本語言語パックのインストールとアクティベート
-    echo "日本語言語パックをインストール中..."
-    wp language core install ja --activate --allow-root --path="$WP_ROOT" || echo "日本語言語パックのインストールに失敗しました"
+    # 日本語言語パックのインストールとアクティベート（毎回実行）
+    echo "日本語言語パックを設定中..."
+    wp language core install ja --allow-root --path="$WP_ROOT" 2>&1 | grep -v "already installed" || true
+    # サイトの言語を日本語に切り替え（非推奨のactivateの代わり）
+    wp site switch-language ja --allow-root --path="$WP_ROOT" 2>&1 || {
+        # フォールバック: 古いコマンドを使用
+        wp language core activate ja --allow-root --path="$WP_ROOT" 2>&1 || true
+    }
+    # WPLANGオプションも明示的に設定
+    wp option update WPLANG ja --allow-root --path="$WP_ROOT" 2>&1 || true
+    # 管理ユーザーの言語設定も日本語に変更
+    ADMIN_USER="${WORDPRESS_ADMIN_USER:-nyardpress}"
+    ADMIN_USER_ID=$(wp user get "$ADMIN_USER" --allow-root --path="$WP_ROOT" --field=ID 2>/dev/null || echo "")
+    if [ -n "$ADMIN_USER_ID" ]; then
+        wp user update "$ADMIN_USER" --locale=ja --allow-root --path="$WP_ROOT" 2>&1 || true
+        wp user meta update "$ADMIN_USER_ID" locale ja --allow-root --path="$WP_ROOT" 2>&1 || true
+    fi
+    echo "✅ 日本語言語パックを設定しました"
 
     # EWWW Image Optimizer用のディレクトリを作成・権限設定
     # wp-content/ewwwはマウントされていないため、コンテナ内で作成・権限設定が可能
