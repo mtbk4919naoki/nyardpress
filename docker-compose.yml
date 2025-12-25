@@ -14,10 +14,10 @@ services:
     container_name: nyardpress_db
     restart: always
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
-      MYSQL_USER: ${MYSQL_USER:-wordpress}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
       # ボリューム名: 固定値（データベースのデータを永続化）
       - nyardpress_db_data:/var/lib/mysql
@@ -38,23 +38,25 @@ services:
     env_file:
       - ./env/.env
     ports:
-      # ポート: .envファイルで変更可能（デフォルト: 8080）
+      # ポート: .envファイルのWORDPRESS_PORTで変更可能（デフォルト: 8080）
       - "${WORDPRESS_PORT:-8080}:80"
     environment:
-      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST:-db}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
-      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost:8080}
-      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-Nyardpress}
-      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
-      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-admin}
-      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      # WORDPRESS_URLは.envファイルのWORDPRESS_PORTに基づいて動的に設定（デフォルト: http://localhost:8080）
+      WORDPRESS_URL: ${WORDPRESS_URL:-http://localhost:${WORDPRESS_PORT:-8080}}
+      WORDPRESS_TITLE: Nyardpress
+      # 管理ユーザー情報（必要に応じて変更してください）
+      WORDPRESS_ADMIN_USER: nyardpress
+      WORDPRESS_ADMIN_PASSWORD: supercat
+      WORDPRESS_ADMIN_EMAIL: admin@example.com
+      MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
       # テーマディレクトリをマウント
       - ./www/htdocs/wp-content/themes:/var/www/html/wp-content/themes
-      # プラグインディレクトリをマウント（永続化）
+      # プラグインディレクトリをマウント（永続化、composer.jsonでプラグイン管理）
       - ./www/htdocs/wp-content/plugins:/var/www/html/wp-content/plugins
       # MUプラグイン（site-core）をマウント
       - ./www/htdocs/wp-content/mu-plugins/site-core:/var/www/html/wp-content/mu-plugins/site-core

@@ -15,44 +15,15 @@ set -uo pipefail
 # WordPressのドキュメントルート
 WP_ROOT="/var/www/html"
 
-# Composer installを実行する関数
-run_composer_install() {
-    local dir=$1
-    if [ -f "$dir/composer.json" ]; then
-        echo "Composer installを実行中: $dir"
-        cd "$dir"
-        composer install --no-interaction --prefer-dist || echo "Composer installに失敗しました: $dir"
-    fi
-}
-
-# マウントされたディレクトリ配下でcomposer.jsonを探索してcomposer installを実行
-echo "マウントされたディレクトリでcomposer.jsonを探索中..."
-
-# wp-content配下のthemes、plugins、mu-pluginsディレクトリを探索
-for base_dir in "$WP_ROOT/wp-content/themes" "$WP_ROOT/wp-content/plugins" "$WP_ROOT/wp-content/mu-plugins"; do
-    if [ -d "$base_dir" ]; then
-        echo "探索中: $base_dir"
-        # ディレクトリ配下を再帰的に探索（最大深度2レベル）
-        # findの結果を配列に格納してから処理（サブシェル問題を回避）
-        find "$base_dir" -maxdepth 2 -type f -name "composer.json" 2>/dev/null | while IFS= read -r composer_file; do
-            if [ -n "$composer_file" ]; then
-                composer_dir=$(dirname "$composer_file")
-                # 既に実行済みのディレクトリをスキップ（vendorディレクトリ内など）
-                if [[ "$composer_dir" != *"/vendor/"* ]]; then
-                    run_composer_install "$composer_dir" || echo "⚠️  Composer installに失敗: $composer_dir"
-                fi
-            fi
-        done || true
-    fi
-done
-
-echo "Composer installが完了しました"
+# Composer installはホスト側で実行する前提
+# プラグイン、テーマ、MUプラグインは既にインストールされていることを想定
 
 # データベース接続情報を環境変数から取得
 DB_HOST="${WORDPRESS_DB_HOST:-db}"
 DB_USER="${WORDPRESS_DB_USER:-wordpress}"
 DB_PASSWORD="${WORDPRESS_DB_PASSWORD:-wordpress}"
 DB_NAME="${WORDPRESS_DB_NAME:-wordpress}"
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-rootpassword}"
 
 # データベース接続を確認
 echo "データベース接続を確認中..."
@@ -139,6 +110,10 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
         exit 1
     fi
 
+    # wp-config.phpのパーミッションを640に設定（セキュリティのため）
+    chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
+    chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
+
     # 開発環境用のデバッグ設定を追加
     echo "開発環境用のデバッグ設定を追加中..."
     wp config set WP_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUGの設定に失敗しました"
@@ -151,6 +126,7 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     if ! wp config has CORE_UPGRADE_SKIP_NEW_BUNDLED --allow-root --path="$WP_ROOT" 2>/dev/null; then
         wp config set CORE_UPGRADE_SKIP_NEW_BUNDLED true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  CORE_UPGRADE_SKIP_NEW_BUNDLEDの設定に失敗しました"
     fi
+
 
     # PHPエラーログを標準出力にも出力するように設定
     # wp-config.phpに直接追加
@@ -170,17 +146,23 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     fi
 
     # WordPressをインストール
+    # 環境変数から管理ユーザー情報を取得（docker-compose.ymlから設定される）
+    ADMIN_USER="${WORDPRESS_ADMIN_USER:-admin}"
+    ADMIN_PASSWORD="${WORDPRESS_ADMIN_PASSWORD:-admin}"
+    ADMIN_EMAIL="${WORDPRESS_ADMIN_EMAIL:-admin@example.com}"
+
     echo "WordPressをインストール中..."
     echo "  URL: ${WORDPRESS_URL:-http://localhost:8080}"
     echo "  タイトル: ${WORDPRESS_TITLE:-Nyardpress}"
-    echo "  管理者ユーザー: ${WORDPRESS_ADMIN_USER:-admin}"
+    echo "  管理者ユーザー: $ADMIN_USER"
+    echo "  管理者メール: $ADMIN_EMAIL"
 
     if wp core install \
         --url="${WORDPRESS_URL:-http://localhost:8080}" \
         --title="${WORDPRESS_TITLE:-Nyardpress}" \
-        --admin_user="${WORDPRESS_ADMIN_USER:-admin}" \
-        --admin_password="${WORDPRESS_ADMIN_PASSWORD:-admin}" \
-        --admin_email="${WORDPRESS_ADMIN_EMAIL:-admin@example.com}" \
+        --admin_user="$ADMIN_USER" \
+        --admin_password="$ADMIN_PASSWORD" \
+        --admin_email="$ADMIN_EMAIL" \
         --allow-root \
         --path="$WP_ROOT" 2>&1; then
         echo "✅ WordPressのインストールが完了しました"
@@ -196,6 +178,36 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     fi
 else
     echo "✅ WordPressは既にインストールされています"
+
+    # 既存インストールの場合でも、管理ユーザー情報を環境変数に合わせて更新
+    echo "管理ユーザー情報を確認中..."
+    ADMIN_USER="${WORDPRESS_ADMIN_USER:-admin}"
+    ADMIN_PASSWORD="${WORDPRESS_ADMIN_PASSWORD:-admin}"
+    ADMIN_EMAIL="${WORDPRESS_ADMIN_EMAIL:-admin@example.com}"
+
+    # 管理ユーザーが存在するか確認
+    if wp user get "$ADMIN_USER" --allow-root --path="$WP_ROOT" --field=ID 2>/dev/null; then
+        echo "管理ユーザー '$ADMIN_USER' が存在します。パスワードとメールアドレスを更新中..."
+        # パスワードを更新
+        wp user update "$ADMIN_USER" --user_pass="$ADMIN_PASSWORD" --allow-root --path="$WP_ROOT" 2>/dev/null || echo "⚠️  パスワードの更新に失敗しました"
+        # メールアドレスを更新
+        wp user update "$ADMIN_USER" --user_email="$ADMIN_EMAIL" --allow-root --path="$WP_ROOT" 2>/dev/null || echo "⚠️  メールアドレスの更新に失敗しました"
+        echo "✅ 管理ユーザー情報を更新しました"
+    else
+        # 既存のadminユーザーが存在する場合、削除して新しいユーザーを作成
+        if wp user get "admin" --allow-root --path="$WP_ROOT" --field=ID 2>/dev/null && [ "$ADMIN_USER" != "admin" ]; then
+            echo "既存の'admin'ユーザーを削除して、新しいユーザー '$ADMIN_USER' を作成中..."
+            wp user delete admin --reassign=1 --allow-root --path="$WP_ROOT" 2>/dev/null || echo "⚠️  既存のadminユーザーの削除に失敗しました"
+        fi
+
+        echo "管理ユーザー '$ADMIN_USER' を作成中..."
+        # 管理ユーザーを作成（管理者権限付き）
+        wp user create "$ADMIN_USER" "$ADMIN_EMAIL" --user_pass="$ADMIN_PASSWORD" --role=administrator --allow-root --path="$WP_ROOT" 2>/dev/null || {
+            echo "⚠️  管理ユーザーの作成に失敗しました。既存ユーザーのパスワードを更新します..."
+            # 作成に失敗した場合（既に存在する場合など）、パスワードのみ更新
+            wp user update "$ADMIN_USER" --user_pass="$ADMIN_PASSWORD" --user_email="$ADMIN_EMAIL" --allow-root --path="$WP_ROOT" 2>/dev/null || echo "⚠️  パスワードの更新にも失敗しました"
+        }
+    fi
 
     # 既存のwp-config.phpにもデバッグ設定を追加（存在しない場合）
     if [ -f "$WP_ROOT/wp-config.php" ]; then
@@ -224,12 +236,32 @@ else
         else
             echo "✅ デバッグ設定は既に有効です"
         fi
+
     fi
 fi
 
 # WordPressがインストールされている場合、設定を実行
 if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     echo "WordPressの設定を開始します..."
+
+    # wp-adminとwp-includesのパーミッションを適切に設定（chmod()警告を防ぐため）
+    echo "wp-adminとwp-includesのパーミッションを設定中..."
+    if [ -d "$WP_ROOT/wp-admin" ]; then
+        chown -R www-data:www-data "$WP_ROOT/wp-admin" 2>/dev/null || true
+        find "$WP_ROOT/wp-admin" -type d -exec chmod 775 {} \; 2>/dev/null || true
+        find "$WP_ROOT/wp-admin" -type f -exec chmod 664 {} \; 2>/dev/null || true
+    fi
+    if [ -d "$WP_ROOT/wp-includes" ]; then
+        chown -R www-data:www-data "$WP_ROOT/wp-includes" 2>/dev/null || true
+        find "$WP_ROOT/wp-includes" -type d -exec chmod 775 {} \; 2>/dev/null || true
+        find "$WP_ROOT/wp-includes" -type f -exec chmod 664 {} \; 2>/dev/null || true
+    fi
+    # wp-config.phpのパーミッションを640に設定（セキュリティのため）
+    if [ -f "$WP_ROOT/wp-config.php" ]; then
+        chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
+        chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
+    fi
+    echo "✅ パーミッション設定が完了しました"
 
     # パーマリンク構造を設定
     echo "パーマリンク構造を設定中..."
@@ -239,6 +271,39 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     # 日本語言語パックのインストールとアクティベート
     echo "日本語言語パックをインストール中..."
     wp language core install ja --activate --allow-root --path="$WP_ROOT" || echo "日本語言語パックのインストールに失敗しました"
+
+    # EWWW Image Optimizer用のディレクトリを作成・権限設定
+    # wp-content/ewwwはマウントされていないため、コンテナ内で作成・権限設定が可能
+    echo "EWWW Image Optimizer用のディレクトリを準備中..."
+    EWWW_DIR="$WP_ROOT/wp-content/ewww"
+    EWWW_BINARIES_DIR="$EWWW_DIR/binaries"
+    if [ ! -d "$EWWW_DIR" ]; then
+        mkdir -p "$EWWW_DIR"
+        echo "✅ EWWWディレクトリを作成しました: $EWWW_DIR"
+    fi
+    if [ ! -d "$EWWW_BINARIES_DIR" ]; then
+        mkdir -p "$EWWW_BINARIES_DIR"
+        echo "✅ EWWW binariesディレクトリを作成しました: $EWWW_BINARIES_DIR"
+    fi
+    # 所有者をwww-dataに変更（WordPressが書き込めるように）
+    chown -R www-data:www-data "$EWWW_DIR" 2>/dev/null || echo "⚠️  所有者の変更に失敗しました"
+    chmod -R 755 "$EWWW_DIR" 2>/dev/null || echo "⚠️  権限の変更に失敗しました"
+
+    # システムにインストールされたツールへのシンボリックリンクを作成
+    if [ -f /usr/bin/jpegtran ]; then
+        ln -sf /usr/bin/jpegtran "$EWWW_BINARIES_DIR/jpegtran-linux" 2>/dev/null || true
+    fi
+    if [ -f /usr/bin/optipng ]; then
+        ln -sf /usr/bin/optipng "$EWWW_BINARIES_DIR/optipng-linux" 2>/dev/null || true
+    fi
+    if [ -f /usr/bin/gifsicle ]; then
+        ln -sf /usr/bin/gifsicle "$EWWW_BINARIES_DIR/gifsicle-linux" 2>/dev/null || true
+    fi
+    if [ -f /usr/bin/cwebp ]; then
+        ln -sf /usr/bin/cwebp "$EWWW_BINARIES_DIR/cwebp-linux" 2>/dev/null || true
+    fi
+
+    echo "✅ EWWWディレクトリを準備しました: $EWWW_DIR"
 
     # デフォルトプラグイン（Akismet、HelloDolly）を先に削除
     echo "デフォルトプラグインを削除中..."
@@ -258,44 +323,48 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
         echo "✅ デフォルトプラグインの削除が完了しました"
     fi
 
-    # 標準プラグインのインストールとアクティベート
+    # 標準プラグインのアクティベート
+    # プラグインはComposerでインストール済み（setup.shの最初で実行）なので、アクティベートのみ実行
     echo ""
-    echo "標準プラグインをインストール中..."
+    echo "標準プラグインをアクティベート中..."
 
-    # プラグインリストを定義
+    # プラグインリストを定義（Composerでインストールされるプラグイン）
     PLUGINS=(
-        "wp-multibyte-patch"
-        "wp-mail-smtp"
         "wordpress-seo"
-        "simple-page-ordering"
-        "taxonomy-terms-order"
-        "ewww-image-optimizer"
-        "wordfence"
-        "w3-total-cache"
-        "wp-crontrol"
+        "wp-multibyte-patch"
         "query-monitor"
+        "cloudsecure-wp-security"
+        "wp-crontrol"
+        "taxonomy-terms-order"
+        "simple-page-ordering"
+        "wp-mail-smtp"
+        "w3-total-cache"
+        "ewww-image-optimizer"
     )
 
-    # 各プラグインをインストール
+    # 各プラグインをアクティベート
     for plugin in "${PLUGINS[@]}"; do
         echo "  - $plugin"
-        # プラグインが既にインストールされているか確認
+        # プラグインがインストールされているか確認
         if wp plugin is-installed "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
-            echo "    ℹ️  $pluginは既にインストールされています"
             # アクティベート（既にアクティブでない場合）
-            wp plugin activate "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null || echo "    ⚠️  $pluginのアクティベートに失敗しました"
-        else
-            # プラグインをインストールしてアクティベート
-            if wp plugin install "$plugin" --activate --allow-root --path="$WP_ROOT" 2>/dev/null; then
-                echo "    ✅ $pluginのインストールが完了しました"
+            if wp plugin activate "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
+                echo "    ✅ $pluginをアクティベートしました"
             else
-                echo "    ⚠️  $pluginのインストールに失敗しました"
+                # 既にアクティブな場合はスキップ
+                if wp plugin is-active "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
+                    echo "    ℹ️  $pluginは既にアクティブです"
+                else
+                    echo "    ⚠️  $pluginのアクティベートに失敗しました"
+                fi
             fi
+        else
+            echo "    ⚠️  $pluginがインストールされていません（Composer installを確認してください）"
         fi
     done
 
     echo ""
-    echo "✅ 標準プラグインのインストールが完了しました"
+    echo "✅ 標準プラグインのアクティベートが完了しました"
 
     # テーマをアクティベート
     THEME_NAME="${THEME_NAME:-nyardpress}"

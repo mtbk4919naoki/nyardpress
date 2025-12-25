@@ -96,12 +96,20 @@ Thumbs.db
 # www/htdocs/wp-content/uploads/
 
 # ============================================
+# EWWW Image Optimizer
+# ============================================
+# ewwwディレクトリ内のファイルは除外（.gitkeepは含める）
+www/htdocs/wp-content/ewww/*
+!www/htdocs/wp-content/ewww/.gitkeep
+
+# ============================================
 # WordPressプラグイン
 # ============================================
 # プラグインはマウントされているため、インストールされたプラグインは永続化されます
 # プラグインディレクトリ全体を除外（.gitkeepは含める）
 www/htdocs/wp-content/plugins/*
-!www/htdocs/wp-content/plugins/.gitkeep
+!www/htdocs/wp-content/plugins/composer.json
+!www/htdocs/wp-content/plugins/composer.lock
 
 
 # ============================================

@@ -6,11 +6,86 @@ set -euo pipefail
 # 環境変数で制御できないため、WordPressの標準エントリーポイントを実行
 # その後、twenty系テーマを削除する処理を追加
 
+# wp-adminとwp-includesの所有者とパーミッションを設定
+# WordPressの公式イメージでは、これらのディレクトリの所有者がrootになっている場合がある
+WP_ADMIN_DIR="/var/www/html/wp-admin"
+WP_INCLUDES_DIR="/var/www/html/wp-includes"
+WP_ROOT="/var/www/html"
+
+# wp-adminとwp-includesの所有者とパーミッションを変更（再帰的に）
+# ディレクトリ: 775、ファイル: 664に設定（chmod()警告を防ぐため）
+if [ -d "$WP_ADMIN_DIR" ]; then
+    chown -R www-data:www-data "$WP_ADMIN_DIR" 2>/dev/null || true
+    find "$WP_ADMIN_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
+    find "$WP_ADMIN_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
+    echo "✅ wp-adminディレクトリの所有者とパーミッションを設定しました"
+fi
+if [ -d "$WP_INCLUDES_DIR" ]; then
+    chown -R www-data:www-data "$WP_INCLUDES_DIR" 2>/dev/null || true
+    find "$WP_INCLUDES_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
+    find "$WP_INCLUDES_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
+    echo "✅ wp-includesディレクトリの所有者とパーミッションを設定しました"
+fi
+
+# wp-contentディレクトリはマウントされているため、所有者変更はスキップ
+# マウントされていない部分（ewwwディレクトリなど）は個別に処理
+WP_CONTENT_DIR="$WP_ROOT/wp-content"
+
+# EWWW Image Optimizer用のディレクトリを事前に作成（コンテナ内なので権限設定可能）
+# wp-content/ewwwはマウントされていないため、コンテナ内で作成・権限設定が可能
+EWWW_DIR="/var/www/html/wp-content/ewww"
+EWWW_BINARIES_DIR="$EWWW_DIR/binaries"
+if [ ! -d "$EWWW_DIR" ]; then
+    mkdir -p "$EWWW_DIR"
+fi
+if [ ! -d "$EWWW_BINARIES_DIR" ]; then
+    mkdir -p "$EWWW_BINARIES_DIR"
+fi
+# 所有者をwww-dataに変更（WordPressが書き込めるように）
+chown -R www-data:www-data "$EWWW_DIR" 2>/dev/null || true
+chmod -R 755 "$EWWW_DIR" 2>/dev/null || true
+
+# システムにインストールされたツールへのシンボリックリンクを作成
+# EWWWはシステムのツールを使用できるように設定
+if [ -f /usr/bin/jpegtran ]; then
+    ln -sf /usr/bin/jpegtran "$EWWW_BINARIES_DIR/jpegtran-linux" 2>/dev/null || true
+fi
+if [ -f /usr/bin/optipng ]; then
+    ln -sf /usr/bin/optipng "$EWWW_BINARIES_DIR/optipng-linux" 2>/dev/null || true
+fi
+if [ -f /usr/bin/gifsicle ]; then
+    ln -sf /usr/bin/gifsicle "$EWWW_BINARIES_DIR/gifsicle-linux" 2>/dev/null || true
+fi
+if [ -f /usr/bin/cwebp ]; then
+    ln -sf /usr/bin/cwebp "$EWWW_BINARIES_DIR/cwebp-linux" 2>/dev/null || true
+fi
+
+echo "✅ EWWWディレクトリを準備しました: $EWWW_DIR"
+
 # WordPressの標準エントリーポイントを実行（wp-config.phpの生成など）
 # 注意: WordPressの公式イメージは、/var/www/htmlが空の場合にwp core downloadを実行します
 # その際、--skip-themesオプションは使えないため、後で削除します
 docker-entrypoint.sh "$@" &
 WP_PID=$!
+
+# WordPressの標準エントリーポイントでwp core downloadが実行された場合、
+# wp-adminとwp-includesの所有者がrootになっている可能性があるため、再度パーミッションを設定
+sleep 3
+# wp core download実行後のパーミッション設定
+if [ -d "$WP_ADMIN_DIR" ]; then
+    chown -R www-data:www-data "$WP_ADMIN_DIR" 2>/dev/null || true
+    find "$WP_ADMIN_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
+    find "$WP_ADMIN_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
+fi
+if [ -d "$WP_INCLUDES_DIR" ]; then
+    chown -R www-data:www-data "$WP_INCLUDES_DIR" 2>/dev/null || true
+    find "$WP_INCLUDES_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
+    find "$WP_INCLUDES_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
+fi
+if [ -f "$WP_ROOT/wp-config.php" ]; then
+    chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
+    chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
+fi
 
 # データベース接続情報を環境変数から取得
 DB_HOST="${WORDPRESS_DB_HOST:-db}"

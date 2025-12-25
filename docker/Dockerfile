@@ -2,6 +2,13 @@ FROM wordpress:php8.2-apache
 
 RUN apt-get update \
     && apt-get -y install default-mysql-client \
+    # EWWW Image Optimizer用の画像圧縮ツールをインストール
+    && apt-get -y install jpegoptim optipng gifsicle webp libjpeg-turbo-progs \
+    # PHP画像処理拡張機能をインストール（GDのみ）
+    && apt-get -y install libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j$(nproc) gd \
+    && rm -rf /var/lib/apt/lists/* \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer --version
 

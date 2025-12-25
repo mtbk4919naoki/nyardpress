@@ -35,19 +35,34 @@ npm run setup:env
 - データベース設定
 - 管理画面の認証情報
 
-### 2. Dockerコンテナの起動
+### 2. セットアップとDockerコンテナの起動
 
 ```bash
-# コンテナのビルドと起動
-npm run dc:build
+# Composer依存関係のインストールとDockerコンテナの起動
+npm run setup
 ```
 
-初回起動時は、自動的に以下が実行されます：
-- WordPressのインストール
-- 日本語言語パックのインストール
-- wordpress-seoプラグインのインストール
-- テーマのアクティベート
-- Composer依存関係のインストール
+このコマンドで以下が実行されます：
+1. **Composer依存関係のインストール**（ホスト側）
+   - プラグイン（`www/htdocs/wp-content/plugins/composer.json`）
+   - テーマ（`www/htdocs/wp-content/themes/{THEME_NAME}/composer.json`）
+   - MUプラグイン（`www/htdocs/wp-content/mu-plugins/site-core/composer.json`）
+2. **Dockerコンテナのビルドと起動**
+   - 初回起動時は、自動的に以下が実行されます：
+     - WordPressのインストール
+     - 日本語言語パックのインストール
+     - 標準プラグインのアクティベート
+     - テーマのアクティベート
+
+**個別に実行する場合：**
+
+```bash
+# Composer依存関係のみインストール
+npm run dc:setup
+
+# Dockerコンテナのみ起動
+npm run dc:build
+```
 
 ### 3. データベースの復元（途中から参加したメンバー向け）
 
@@ -104,6 +119,17 @@ nyardpress/
 ```bash
 # 環境変数の設定（対話形式）
 npm run setup:env
+```
+
+### セットアップと起動
+
+```bash
+# Composer依存関係のインストールとDockerコンテナの起動（推奨）
+npm run setup
+
+# 個別に実行する場合
+npm run dc:setup  # Composer依存関係のみインストール
+npm run dc:build  # Dockerコンテナのみ起動
 ```
 
 ### Docker管理

@@ -4,7 +4,9 @@
   "description": "WordPress development environment",
   "scripts": {
     "dev": "node env/dev.js",
+    "setup": "npm run dc:setup && npm run dc:build",
     "setup:env": "node env/setup-env.js",
+    "dc:setup": "node env/dc-setup.js",
     "dc:destroy": "node env/dc-destory.js",
     "dc:build": "node env/dc-build.js",
     "dc:dump": "node env/dc-dump.js",
