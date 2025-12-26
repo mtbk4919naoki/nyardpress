@@ -54,21 +54,46 @@ services:
       WORDPRESS_ADMIN_EMAIL: admin@example.com
       MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
-      # テーマディレクトリをマウント
+      # テーマディレクトリをマウント（ホスト側で編集可能）
       - ./www/htdocs/wp-content/themes:/var/www/html/wp-content/themes
       # プラグインディレクトリをマウント（永続化、composer.jsonでプラグイン管理）
       - ./www/htdocs/wp-content/plugins:/var/www/html/wp-content/plugins
       # MUプラグインディレクトリをマウント
       - ./www/htdocs/wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
+      # 言語パックディレクトリをマウント（永続化）
+      - ./www/htdocs/wp-content/languages:/var/www/html/wp-content/languages
+      # アップロードファイルをマウント（永続化）
+      - ./www/htdocs/wp-content/uploads:/var/www/html/wp-content/uploads
+      # ログディレクトリをマウント
+      - ./docker/log:/var/www/html/docker/log
       # ダンプディレクトリをマウント（エクスポート/インポート用）
       - ./docker/dump:/var/www/html/docker/dump
+      # 注意: 全体をマウント（nyardpress_wordpress_data:/var/www/html/）すると、
+      # 上記の個別マウントと競合し、ホスト側での編集が反映されなくなります。
+      # 開発環境では個別マウントを推奨します。
       # 必要に応じて個別に追加してください
       # - ./www/htdocs/custom-folder:/var/www/html/custom-folder
     depends_on:
       - db
+      - mailpit
     networks:
       # ネットワーク名: 固定値
       - nyardpress-network
+
+  # Mailpit（開発環境用メールサーバー）コンテナ
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: nyardpress_mailpit
+    restart: always
+    ports:
+      - "1025:1025"  # SMTPポート
+      - "8025:8025"  # Web UIポート
+    networks:
+      # ネットワーク名: 固定値
+      - nyardpress-network
+    environment:
+      MP_SMTP_BIND_ADDR: 0.0.0.0:1025
+      MP_WEB_BIND_ADDR: 0.0.0.0:8025
 
 # ============================================
 # ボリューム定義
@@ -77,6 +102,9 @@ services:
 # ボリューム名: nyardpress_db_data（固定値）
 # ============================================
 volumes:
+  # 注意: nyardpress_wordpress_dataは使用していません
+  # 全体を永続化する場合は、個別マウントを削除して以下を有効化してください：
+  # nyardpress_wordpress_data:
   nyardpress_db_data:
 
 # ============================================

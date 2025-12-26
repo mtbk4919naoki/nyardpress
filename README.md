@@ -12,6 +12,7 @@ Dockerを使用したWordPress開発環境で、Timber（Twig）、Carbon Fields
 - 🔧 カスタム投稿タイプ・タクソノミーの自動読み込み
 - 🛠️ ユーティリティ関数（キャッシュ、ログなど）
 - 🇯🇵 日本語環境の自動セットアップ
+- 📧 Mailpitによるメールテスト環境
 
 ## 必要な環境
 
@@ -80,7 +81,10 @@ npm run dc:restore wordpress_dump_20251225_132220
 
 ### 4. アクセス
 
-ブラウザで `http://localhost:8080` にアクセスしてください。
+- **WordPress**: `http://localhost:8080`（デフォルト、`.env`で変更可能）
+- **Mailpit Web UI**: `http://localhost:8025`（メールテスト用）
+  - WordPressから送信されたメールがここに表示されます
+  - SMTPサーバーは自動的に `mailpit:1025` に接続されます
 
 ## ディレクトリ構造
 

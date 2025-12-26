@@ -114,6 +114,9 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
     chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
 
+    # Mailpit設定はMUプラグイン（site-core/mail/mailpit.php）で管理
+    echo "✅ Mailpit設定はMUプラグインで管理されます"
+
     # 開発環境用のデバッグ設定を追加
     echo "開発環境用のデバッグ設定を追加中..."
     wp config set WP_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUGの設定に失敗しました"
@@ -128,14 +131,19 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     fi
 
 
-    # PHPエラーログを標準出力にも出力するように設定
+    # PHPエラーログをdocker/logディレクトリと標準出力の両方に出力するように設定
     # wp-config.phpに直接追加
     if ! grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
         echo "" >> "$WP_ROOT/wp-config.php"
-        echo "/* 開発環境用: PHPエラーログを標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
+        echo "/* 開発環境用: PHPエラーログをdocker/logディレクトリと標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
         echo "if (WP_DEBUG) {" >> "$WP_ROOT/wp-config.php"
         echo "    ini_set('log_errors', 1);" >> "$WP_ROOT/wp-config.php"
-        echo "    ini_set('error_log', 'php://stderr');" >> "$WP_ROOT/wp-config.php"
+        echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
+        echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
+        echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
+        echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
+        echo "    }" >> "$WP_ROOT/wp-config.php"
+        echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
         echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
         echo "    ini_set('display_startup_errors', 1);" >> "$WP_ROOT/wp-config.php"
         echo "    error_reporting(E_ALL);" >> "$WP_ROOT/wp-config.php"
@@ -220,13 +228,18 @@ else
             wp config set WP_DEBUG_LOG_FILE "$WP_ROOT/wp-content/debug.log" --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOG_FILEの設定に失敗しました"
             wp config set SCRIPT_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  SCRIPT_DEBUGの設定に失敗しました"
 
-            # PHPエラーログを標準出力にも出力するように設定
+            # PHPエラーログをdocker/logディレクトリと標準出力の両方に出力するように設定
             if ! grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
                 echo "" >> "$WP_ROOT/wp-config.php"
-                echo "/* 開発環境用: PHPエラーログを標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
+                echo "/* 開発環境用: PHPエラーログをdocker/logディレクトリと標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
                 echo "if (WP_DEBUG) {" >> "$WP_ROOT/wp-config.php"
                 echo "    ini_set('log_errors', 1);" >> "$WP_ROOT/wp-config.php"
-                echo "    ini_set('error_log', 'php://stderr');" >> "$WP_ROOT/wp-config.php"
+                echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
+                echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
+                echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
+                echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
+                echo "    }" >> "$WP_ROOT/wp-config.php"
+                echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
                 echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
                 echo "    ini_set('display_startup_errors', 1);" >> "$WP_ROOT/wp-config.php"
                 echo "    error_reporting(E_ALL);" >> "$WP_ROOT/wp-config.php"
@@ -304,6 +317,30 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     chown -R www-data:www-data "$EWWW_DIR" 2>/dev/null || echo "⚠️  所有者の変更に失敗しました"
     chmod -R 755 "$EWWW_DIR" 2>/dev/null || echo "⚠️  権限の変更に失敗しました"
 
+    # W3 Total Cache用のディレクトリを作成・権限設定
+    # wp-content/cacheとwp-content/w3tc-configはマウントされていないため、コンテナ内で作成・権限設定が可能
+    echo "W3 Total Cache用のディレクトリを準備中..."
+    W3TC_CACHE_DIR="$WP_ROOT/wp-content/cache"
+    W3TC_CONFIG_DIR="$WP_ROOT/wp-content/w3tc-config"
+    W3TC_TMP_DIR="$W3TC_CACHE_DIR/tmp"
+    if [ ! -d "$W3TC_CACHE_DIR" ]; then
+        mkdir -p "$W3TC_CACHE_DIR"
+        echo "✅ W3TC cacheディレクトリを作成しました: $W3TC_CACHE_DIR"
+    fi
+    if [ ! -d "$W3TC_CONFIG_DIR" ]; then
+        mkdir -p "$W3TC_CONFIG_DIR"
+        echo "✅ W3TC configディレクトリを作成しました: $W3TC_CONFIG_DIR"
+    fi
+    if [ ! -d "$W3TC_TMP_DIR" ]; then
+        mkdir -p "$W3TC_TMP_DIR"
+        echo "✅ W3TC tmpディレクトリを作成しました: $W3TC_TMP_DIR"
+    fi
+    # 所有者をwww-dataに変更（WordPressが書き込めるように）
+    chown -R www-data:www-data "$W3TC_CACHE_DIR" 2>/dev/null || echo "⚠️  W3TC cache所有者の変更に失敗しました"
+    chown -R www-data:www-data "$W3TC_CONFIG_DIR" 2>/dev/null || echo "⚠️  W3TC config所有者の変更に失敗しました"
+    chmod -R 755 "$W3TC_CACHE_DIR" 2>/dev/null || echo "⚠️  W3TC cache権限の変更に失敗しました"
+    chmod -R 755 "$W3TC_CONFIG_DIR" 2>/dev/null || echo "⚠️  W3TC config権限の変更に失敗しました"
+
     # システムにインストールされたツールへのシンボリックリンクを作成
     if [ -f /usr/bin/jpegtran ]; then
         ln -sf /usr/bin/jpegtran "$EWWW_BINARIES_DIR/jpegtran-linux" 2>/dev/null || true
@@ -338,26 +375,38 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
         echo "✅ デフォルトプラグインの削除が完了しました"
     fi
 
-    # 標準プラグインのアクティベート
-    # プラグインはComposerでインストール済み（setup.shの最初で実行）なので、アクティベートのみ実行
+    # 標準プラグインのアクティベートと日本語化
+    # プラグインはComposerでインストール済み（setup.shの最初で実行）なので、アクティベートと日本語化のみ実行
     echo ""
-    echo "標準プラグインをアクティベート中..."
+    echo "標準プラグインをアクティベート・日本語化中..."
 
-    # プラグインリストを定義（Composerでインストールされるプラグイン）
+    # プラグインリストを定義（インストール順序を考慮）
+    # 依存関係や初期設定が必要なプラグインを先に配置
     PLUGINS=(
-        "wordpress-seo"
-        "wp-multibyte-patch"
-        "query-monitor"
-        "cloudsecure-wp-security"
-        "wp-crontrol"
-        "taxonomy-terms-order"
-        "simple-page-ordering"
-        "wp-mail-smtp"
-        "w3-total-cache"
-        "ewww-image-optimizer"
+        "wp-multibyte-patch"          # 日本語対応の基本プラグイン（最優先）
+        "wordpress-seo"                # SEOプラグイン
+        "taxonomy-terms-order"         # タクソノミー順序
+        "simple-page-ordering"        # ページ順序
+        "wp-crontrol"                  #  Cron管理
+        "query-monitor"                # デバッグツール
+        "wordpress-importer"           # インポートツール（アクティベート）
+        # "wp-mail-smtp"                # メール送信
+        # "w3-total-cache"               # キャッシュプラグイン
+        # "ewww-image-optimizer"        # 画像最適化
+        # "cloudsecure-wp-security"      # セキュリティプラグイン
+        # "updraftplus"                  # バックアップ（日本語化のみ）
+        # "all-in-one-wp-migration"      # 移行ツール（日本語化のみ）
+        # "redirection"                  # リダイレクト（日本語化のみ）
     )
 
-    # 各プラグインをアクティベート
+    # 日本語化のみ実施するプラグイン（アクティベートしない）
+    PLUGINS_LOCALIZE_ONLY=(
+        "updraftplus"
+        "all-in-one-wp-migration"
+        "redirection"
+    )
+
+    # 各プラグインをアクティベートし、日本語化
     for plugin in "${PLUGINS[@]}"; do
         echo "  - $plugin"
         # プラグインがインストールされているか確認
@@ -373,13 +422,39 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
                     echo "    ⚠️  $pluginのアクティベートに失敗しました"
                 fi
             fi
+
+            # プラグインの日本語化（毎回実行）
+            echo "    日本語言語パックをインストール中..."
+            wp language plugin install "$plugin" ja --allow-root --path="$WP_ROOT" 2>&1 | grep -v "already installed" || true
+            wp language plugin update "$plugin" --allow-root --path="$WP_ROOT" 2>&1 || true
         else
             echo "    ⚠️  $pluginがインストールされていません（Composer installを確認してください）"
         fi
     done
 
     echo ""
-    echo "✅ 標準プラグインのアクティベートが完了しました"
+    echo "✅ 標準プラグインのアクティベート・日本語化が完了しました"
+
+    # 日本語化のみ実施するプラグイン（アクティベートしない）
+    if [ ${#PLUGINS_LOCALIZE_ONLY[@]} -gt 0 ]; then
+        echo ""
+        echo "日本語化のみ実施するプラグインを処理中..."
+        for plugin in "${PLUGINS_LOCALIZE_ONLY[@]}"; do
+            echo "  - $plugin（日本語化のみ）"
+            # プラグインがインストールされているか確認
+            if wp plugin is-installed "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
+                # プラグインの日本語化（毎回実行）
+                echo "    日本語言語パックをインストール中..."
+                wp language plugin install "$plugin" ja --allow-root --path="$WP_ROOT" 2>&1 | grep -v "already installed" || true
+                wp language plugin update "$plugin" --allow-root --path="$WP_ROOT" 2>&1 || true
+                echo "    ✅ $pluginの日本語化が完了しました"
+            else
+                echo "    ⚠️  $pluginがインストールされていません（Composer installを確認してください）"
+            fi
+        done
+        echo ""
+        echo "✅ 日本語化のみ実施するプラグインの処理が完了しました"
+    fi
 
     # テーマをアクティベート
     THEME_NAME="${THEME_NAME:-nyardpress}"

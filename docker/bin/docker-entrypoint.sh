@@ -1,11 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# WordPressの標準エントリーポイントを実行する前に、
-# wp core downloadが実行される場合に備えて、--skip-themesオプションを設定
-# 環境変数で制御できないため、WordPressの標準エントリーポイントを実行
-# その後、twenty系テーマを削除する処理を追加
-
 # wp-adminとwp-includesの所有者とパーミッションを設定
 # WordPressの公式イメージでは、これらのディレクトリの所有者がrootになっている場合がある
 WP_ADMIN_DIR="/var/www/html/wp-admin"
@@ -44,6 +39,26 @@ fi
 # 所有者をwww-dataに変更（WordPressが書き込めるように）
 chown -R www-data:www-data "$EWWW_DIR" 2>/dev/null || true
 chmod -R 755 "$EWWW_DIR" 2>/dev/null || true
+
+# W3 Total Cache用のディレクトリを事前に作成（コンテナ内なので権限設定可能）
+# wp-content/cacheとwp-content/w3tc-configはマウントされていないため、コンテナ内で作成・権限設定が可能
+W3TC_CACHE_DIR="/var/www/html/wp-content/cache"
+W3TC_CONFIG_DIR="/var/www/html/wp-content/w3tc-config"
+W3TC_TMP_DIR="$W3TC_CACHE_DIR/tmp"
+if [ ! -d "$W3TC_CACHE_DIR" ]; then
+    mkdir -p "$W3TC_CACHE_DIR"
+fi
+if [ ! -d "$W3TC_CONFIG_DIR" ]; then
+    mkdir -p "$W3TC_CONFIG_DIR"
+fi
+if [ ! -d "$W3TC_TMP_DIR" ]; then
+    mkdir -p "$W3TC_TMP_DIR"
+fi
+# 所有者をwww-dataに変更（WordPressが書き込めるように）
+chown -R www-data:www-data "$W3TC_CACHE_DIR" 2>/dev/null || true
+chown -R www-data:www-data "$W3TC_CONFIG_DIR" 2>/dev/null || true
+chmod -R 755 "$W3TC_CACHE_DIR" 2>/dev/null || true
+chmod -R 755 "$W3TC_CONFIG_DIR" 2>/dev/null || true
 
 # システムにインストールされたツールへのシンボリックリンクを作成
 # EWWWはシステムのツールを使用できるように設定
@@ -187,10 +202,17 @@ if [ -f /usr/docker/bin/setup.sh ]; then
         # wp core is-installedで判定（データベース接続が必要なので、接続確認後に実行）
         if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
             echo "ℹ️  WordPressは既にインストール済みです"
-            # 日本語化の処理だけは毎回実行（再起動時に英語に戻るのを防ぐ）
-            echo "日本語言語パックを設定中..."
+            # 日本語化とパーマリンク設定は毎回実行（再起動時に設定が消えるのを防ぐ）
             # データベース接続を確認してから実行
             if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
+                # パーマリンク構造を設定（毎回実行）
+                echo "パーマリンク構造を設定中..."
+                wp rewrite structure '/%postname%/' --allow-root --path="/var/www/html" 2>&1 || echo "⚠️  パーマリンク構造の設定に失敗しました"
+                wp rewrite flush --allow-root --path="/var/www/html" 2>&1 || echo "⚠️  パーマリンクのフラッシュに失敗しました"
+                echo "✅ パーマリンク構造を設定しました"
+
+                # 日本語化の処理（毎回実行）
+                echo "日本語言語パックを設定中..."
                 # 日本語パックをインストール（既にインストール済みの場合は更新）
                 wp language core install ja --allow-root --path="/var/www/html" 2>&1 | grep -v "already installed" || true
                 # サイトの言語を日本語に切り替え（非推奨のactivateの代わり）
@@ -208,8 +230,34 @@ if [ -f /usr/docker/bin/setup.sh ]; then
                     wp user meta update "$ADMIN_USER_ID" locale ja --allow-root --path="/var/www/html" 2>&1 || true
                 fi
                 echo "✅ 日本語言語パックを設定しました"
+
+                # プラグインの日本語化（毎回実行）
+                echo "プラグインの日本語言語パックをインストール中..."
+                PLUGINS=(
+                    "wp-multibyte-patch"
+                    "wordpress-seo"
+                    "query-monitor"
+                    "cloudsecure-wp-security"
+                    "wp-crontrol"
+                    "taxonomy-terms-order"
+                    "simple-page-ordering"
+                    "wp-mail-smtp"
+                    "w3-total-cache"
+                    "ewww-image-optimizer"
+                    "updraftplus"
+                    "all-in-one-wp-migration"
+                    "wordpress-importer"
+                    "redirection"
+                )
+                for plugin in "${PLUGINS[@]}"; do
+                    if wp plugin is-installed "$plugin" --allow-root --path="/var/www/html" 2>/dev/null; then
+                        wp language plugin install "$plugin" ja --allow-root --path="/var/www/html" 2>&1 | grep -v "already installed" || true
+                        wp language plugin update "$plugin" --allow-root --path="/var/www/html" 2>&1 || true
+                    fi
+                done
+                echo "✅ プラグインの日本語言語パックを設定しました"
             else
-                echo "⚠️  データベース接続が確立されていないため、日本語化をスキップします"
+                echo "⚠️  データベース接続が確立されていないため、設定をスキップします"
             fi
         else
             echo "=========================================="

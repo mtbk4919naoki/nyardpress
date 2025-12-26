@@ -26,21 +26,21 @@ if (class_exists('Timber\Timber')) {
 function nyardpress_context($context) {
     // デフォルトのコンテキストを取得
     $context = Timber\Timber::context();
-    
+
     // サイト情報を追加（既にcontextに含まれている場合は上書きしない）
     if (!isset($context['site'])) {
         $context['site'] = Timber\Timber::get_site();
     }
-    
+
     // メニューを追加（メニューが存在する場合のみ）
     $menu = Timber\Timber::get_menu('primary');
     if ($menu) {
         $context['menu'] = $menu;
     }
-    
+
     // サイドバーウィジェットエリア
     $context['sidebar'] = Timber\Timber::get_widgets('sidebar-1');
-    
+
     return $context;
 }
 add_filter('timber/context', 'nyardpress_context');
@@ -69,10 +69,10 @@ add_filter('timber/locations', 'nyardpress_timber_locations');
 function nyardpress_theme_support() {
     // タイトルタグのサポート
     add_theme_support('title-tag');
-    
+
     // アイキャッチ画像のサポート
     add_theme_support('post-thumbnails');
-    
+
     // HTML5マークアップのサポート
     add_theme_support('html5', array(
         'search-form',
@@ -81,7 +81,7 @@ function nyardpress_theme_support() {
         'gallery',
         'caption',
     ));
-    
+
     // カスタムロゴのサポート
     add_theme_support('custom-logo', array(
         'height'      => 100,
@@ -89,7 +89,7 @@ function nyardpress_theme_support() {
         'flex-height' => true,
         'flex-width'  => true,
     ));
-    
+
     // フィードリンクのサポート
     add_theme_support('automatic-feed-links');
 }
@@ -133,7 +133,7 @@ function nyardpress_enqueue_scripts() {
         array(),
         wp_get_theme()->get('Version')
     );
-    
+
     // メインのJavaScript
     if (file_exists(get_template_directory() . '/assets/js/main.js')) {
         wp_enqueue_script(
@@ -156,4 +156,3 @@ function nyardpress_image_sizes() {
     add_image_size('nyardpress-large', 1200, 800, true);
 }
 add_action('after_setup_theme', 'nyardpress_image_sizes');
-

@@ -29,7 +29,11 @@
     "wpackagist-plugin/simple-page-ordering": "*",
     "wpackagist-plugin/wp-mail-smtp": "*",
     "wpackagist-plugin/w3-total-cache": "*",
-    "wpackagist-plugin/ewww-image-optimizer": "*"
+    "wpackagist-plugin/ewww-image-optimizer": "*",
+    "wpackagist-plugin/updraftplus": "*",
+    "wpackagist-plugin/all-in-one-wp-migration": "*",
+    "wpackagist-plugin/wordpress-importer": "*",
+    "wpackagist-plugin/redirection": "*"
   },
   "config": {
     "allow-plugins": {

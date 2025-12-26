@@ -111,6 +111,20 @@ www/htdocs/wp-content/plugins/*
 !www/htdocs/wp-content/plugins/composer.json
 !www/htdocs/wp-content/plugins/composer.lock
 
+# ============================================
+# WordPress言語パック
+# ============================================
+# 言語パックはマウントされているため、インストールされた言語パックは永続化されます
+# 言語パックディレクトリ内のファイルは除外（.gitkeepは含める）
+www/htdocs/wp-content/languages/*
+!www/htdocs/wp-content/languages/.gitkeep
+
+# ============================================
+# Carbon Fields JSON保存ディレクトリ
+# ============================================
+# cbf-jsonディレクトリ内のファイルは除外（.gitkeepは含める）
+www/htdocs/wp-content/cbf-json/*
+!www/htdocs/wp-content/cbf-json/.gitkeep
 
 # ============================================
 # Docker関連
@@ -122,4 +136,7 @@ docker/dump/sql/*.sql
 docker/dump/uploads/*
 !docker/dump/sql/.gitkeep
 !docker/dump/uploads/.gitkeep
+# ログディレクトリ（すべてのファイルを除外）
+docker/log/*
+!docker/log/.gitkeep
 
