@@ -35,10 +35,6 @@ try {
     cwd: projectRoot
   });
 
-  console.log('✅ WordPressコンテナの再構成が完了しました');
-  console.log('コンテナ構成直後はsetup.shが自動実行されるので、しばらく待ってからアクセスしてください');
-  console.log('🌐 WordPress: http://localhost:8080');
-
 } catch (error) {
   console.error('❌ エラーが発生しました:', error.message);
   process.exit(1);

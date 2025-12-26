@@ -91,9 +91,12 @@ Thumbs.db
 *.sublime-workspace
 
 # ============================================
-# WordPressアップロードファイル（必要に応じて）
+# WordPressアップロードファイル
 # ============================================
-# www/htdocs/wp-content/uploads/
+# アップロードファイルはマウントされているため、永続化されます
+# uploadsディレクトリ内のファイルは除外（.gitkeepは含める）
+www/htdocs/wp-content/uploads/*
+!www/htdocs/wp-content/uploads/.gitkeep
 
 # ============================================
 # EWWW Image Optimizer

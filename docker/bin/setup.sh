@@ -1,11 +1,12 @@
 #!/bin/bash
 # ==============================================
-# wp-config.phpの初期化を行います
+# WordPressの初回インストール処理
 #
 # - wp-config.php の自動生成
-# - WordPress のインストールと初期設定（パーマリンク、日本語化など）
-# - Carbon Fieldsのインストールと有効化
-# - よく使うプラグインのインストールと有効化
+# - WordPress のインストール
+# - デバッグ設定の追加
+# - プラグイン・テーマのアクティベート
+# 注意: パーマリンク、日本語化はpost-setup.shで実行されます
 # ========================================
 
 set -uo pipefail
@@ -110,9 +111,7 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
         exit 1
     fi
 
-    # wp-config.phpのパーミッションを640に設定（セキュリティのため）
-    chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
-    chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
+    # wp-config.phpのパーミッションはinit.shで設定されるため、ここではスキップ
 
     # Mailpit設定はMUプラグイン（site-core/mail/mailpit.php）で管理
     echo "✅ Mailpit設定はMUプラグインで管理されます"
@@ -257,227 +256,17 @@ fi
 if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     echo "WordPressの設定を開始します..."
 
-    # wp-adminとwp-includesのパーミッションを適切に設定（chmod()警告を防ぐため）
-    echo "wp-adminとwp-includesのパーミッションを設定中..."
-    if [ -d "$WP_ROOT/wp-admin" ]; then
-        chown -R www-data:www-data "$WP_ROOT/wp-admin" 2>/dev/null || true
-        find "$WP_ROOT/wp-admin" -type d -exec chmod 775 {} \; 2>/dev/null || true
-        find "$WP_ROOT/wp-admin" -type f -exec chmod 664 {} \; 2>/dev/null || true
-    fi
-    if [ -d "$WP_ROOT/wp-includes" ]; then
-        chown -R www-data:www-data "$WP_ROOT/wp-includes" 2>/dev/null || true
-        find "$WP_ROOT/wp-includes" -type d -exec chmod 775 {} \; 2>/dev/null || true
-        find "$WP_ROOT/wp-includes" -type f -exec chmod 664 {} \; 2>/dev/null || true
-    fi
-    # wp-config.phpのパーミッションを640に設定（セキュリティのため）
-    if [ -f "$WP_ROOT/wp-config.php" ]; then
-        chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
-        chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
-    fi
-    echo "✅ パーミッション設定が完了しました"
+    # 初期化処理はinit.shで実行されるため、ここではプラグインとテーマの処理のみ実行
 
-    # パーマリンク構造を設定
-    echo "パーマリンク構造を設定中..."
-    wp rewrite structure '/%postname%/' --allow-root --path="$WP_ROOT" || echo "パーマリンク構造の設定に失敗しました"
-    wp rewrite flush --allow-root --path="$WP_ROOT" || echo "パーマリンクのフラッシュに失敗しました"
-
-    # 日本語言語パックのインストールとアクティベート（毎回実行）
-    echo "日本語言語パックを設定中..."
-    wp language core install ja --allow-root --path="$WP_ROOT" 2>&1 | grep -v "already installed" || true
-    # サイトの言語を日本語に切り替え（非推奨のactivateの代わり）
-    wp site switch-language ja --allow-root --path="$WP_ROOT" 2>&1 || {
-        # フォールバック: 古いコマンドを使用
-        wp language core activate ja --allow-root --path="$WP_ROOT" 2>&1 || true
-    }
-    # WPLANGオプションも明示的に設定
-    wp option update WPLANG ja --allow-root --path="$WP_ROOT" 2>&1 || true
-    # 管理ユーザーの言語設定も日本語に変更
-    ADMIN_USER="${WORDPRESS_ADMIN_USER:-nyardpress}"
-    ADMIN_USER_ID=$(wp user get "$ADMIN_USER" --allow-root --path="$WP_ROOT" --field=ID 2>/dev/null || echo "")
-    if [ -n "$ADMIN_USER_ID" ]; then
-        wp user update "$ADMIN_USER" --locale=ja --allow-root --path="$WP_ROOT" 2>&1 || true
-        wp user meta update "$ADMIN_USER_ID" locale ja --allow-root --path="$WP_ROOT" 2>&1 || true
-    fi
-    echo "✅ 日本語言語パックを設定しました"
-
-    # EWWW Image Optimizer用のディレクトリを作成・権限設定
-    # wp-content/ewwwはマウントされていないため、コンテナ内で作成・権限設定が可能
-    echo "EWWW Image Optimizer用のディレクトリを準備中..."
-    EWWW_DIR="$WP_ROOT/wp-content/ewww"
-    EWWW_BINARIES_DIR="$EWWW_DIR/binaries"
-    if [ ! -d "$EWWW_DIR" ]; then
-        mkdir -p "$EWWW_DIR"
-        echo "✅ EWWWディレクトリを作成しました: $EWWW_DIR"
-    fi
-    if [ ! -d "$EWWW_BINARIES_DIR" ]; then
-        mkdir -p "$EWWW_BINARIES_DIR"
-        echo "✅ EWWW binariesディレクトリを作成しました: $EWWW_BINARIES_DIR"
-    fi
-    # 所有者をwww-dataに変更（WordPressが書き込めるように）
-    chown -R www-data:www-data "$EWWW_DIR" 2>/dev/null || echo "⚠️  所有者の変更に失敗しました"
-    chmod -R 755 "$EWWW_DIR" 2>/dev/null || echo "⚠️  権限の変更に失敗しました"
-
-    # W3 Total Cache用のディレクトリを作成・権限設定
-    # wp-content/cacheとwp-content/w3tc-configはマウントされていないため、コンテナ内で作成・権限設定が可能
-    echo "W3 Total Cache用のディレクトリを準備中..."
-    W3TC_CACHE_DIR="$WP_ROOT/wp-content/cache"
-    W3TC_CONFIG_DIR="$WP_ROOT/wp-content/w3tc-config"
-    W3TC_TMP_DIR="$W3TC_CACHE_DIR/tmp"
-    if [ ! -d "$W3TC_CACHE_DIR" ]; then
-        mkdir -p "$W3TC_CACHE_DIR"
-        echo "✅ W3TC cacheディレクトリを作成しました: $W3TC_CACHE_DIR"
-    fi
-    if [ ! -d "$W3TC_CONFIG_DIR" ]; then
-        mkdir -p "$W3TC_CONFIG_DIR"
-        echo "✅ W3TC configディレクトリを作成しました: $W3TC_CONFIG_DIR"
-    fi
-    if [ ! -d "$W3TC_TMP_DIR" ]; then
-        mkdir -p "$W3TC_TMP_DIR"
-        echo "✅ W3TC tmpディレクトリを作成しました: $W3TC_TMP_DIR"
-    fi
-    # 所有者をwww-dataに変更（WordPressが書き込めるように）
-    chown -R www-data:www-data "$W3TC_CACHE_DIR" 2>/dev/null || echo "⚠️  W3TC cache所有者の変更に失敗しました"
-    chown -R www-data:www-data "$W3TC_CONFIG_DIR" 2>/dev/null || echo "⚠️  W3TC config所有者の変更に失敗しました"
-    chmod -R 755 "$W3TC_CACHE_DIR" 2>/dev/null || echo "⚠️  W3TC cache権限の変更に失敗しました"
-    chmod -R 755 "$W3TC_CONFIG_DIR" 2>/dev/null || echo "⚠️  W3TC config権限の変更に失敗しました"
-
-    # システムにインストールされたツールへのシンボリックリンクを作成
-    if [ -f /usr/bin/jpegtran ]; then
-        ln -sf /usr/bin/jpegtran "$EWWW_BINARIES_DIR/jpegtran-linux" 2>/dev/null || true
-    fi
-    if [ -f /usr/bin/optipng ]; then
-        ln -sf /usr/bin/optipng "$EWWW_BINARIES_DIR/optipng-linux" 2>/dev/null || true
-    fi
-    if [ -f /usr/bin/gifsicle ]; then
-        ln -sf /usr/bin/gifsicle "$EWWW_BINARIES_DIR/gifsicle-linux" 2>/dev/null || true
-    fi
-    if [ -f /usr/bin/cwebp ]; then
-        ln -sf /usr/bin/cwebp "$EWWW_BINARIES_DIR/cwebp-linux" 2>/dev/null || true
-    fi
-
-    echo "✅ EWWWディレクトリを準備しました: $EWWW_DIR"
-
-    # デフォルトプラグイン（Akismet、HelloDolly）を先に削除
-    echo "デフォルトプラグインを削除中..."
-    PLUGINS_DIR="$WP_ROOT/wp-content/plugins"
-    if [ -d "$PLUGINS_DIR" ]; then
-        # Akismetプラグインを削除
-        if [ -d "$PLUGINS_DIR/akismet" ] || wp plugin is-installed akismet --allow-root --path="$WP_ROOT" 2>/dev/null; then
-            echo "  - akismetを削除中..."
-            wp plugin delete akismet --allow-root --path="$WP_ROOT" 2>/dev/null || rm -rf "$PLUGINS_DIR/akismet" 2>/dev/null || echo "    ⚠️  akismetの削除に失敗しました"
-        fi
-
-        # HelloDollyプラグインを削除
-        if [ -f "$PLUGINS_DIR/hello.php" ] || wp plugin is-installed hello --allow-root --path="$WP_ROOT" 2>/dev/null; then
-            echo "  - hello-dollyを削除中..."
-            wp plugin delete hello --allow-root --path="$WP_ROOT" 2>/dev/null || rm -f "$PLUGINS_DIR/hello.php" 2>/dev/null || echo "    ⚠️  hello-dollyの削除に失敗しました"
-        fi
-        echo "✅ デフォルトプラグインの削除が完了しました"
-    fi
-
-    # 標準プラグインのアクティベートと日本語化
-    # プラグインはComposerでインストール済み（setup.shの最初で実行）なので、アクティベートと日本語化のみ実行
-    echo ""
-    echo "標準プラグインをアクティベート・日本語化中..."
-
-    # プラグインリストを定義（インストール順序を考慮）
-    # 依存関係や初期設定が必要なプラグインを先に配置
-    PLUGINS=(
-        "wp-multibyte-patch"          # 日本語対応の基本プラグイン（最優先）
-        "wordpress-seo"                # SEOプラグイン
-        "taxonomy-terms-order"         # タクソノミー順序
-        "simple-page-ordering"        # ページ順序
-        "wp-crontrol"                  #  Cron管理
-        "query-monitor"                # デバッグツール
-        "wordpress-importer"           # インポートツール（アクティベート）
-        # "wp-mail-smtp"                # メール送信
-        # "w3-total-cache"               # キャッシュプラグイン
-        # "ewww-image-optimizer"        # 画像最適化
-        # "cloudsecure-wp-security"      # セキュリティプラグイン
-        # "updraftplus"                  # バックアップ（日本語化のみ）
-        # "all-in-one-wp-migration"      # 移行ツール（日本語化のみ）
-        # "redirection"                  # リダイレクト（日本語化のみ）
-    )
-
-    # 日本語化のみ実施するプラグイン（アクティベートしない）
-    PLUGINS_LOCALIZE_ONLY=(
-        "updraftplus"
-        "all-in-one-wp-migration"
-        "redirection"
-    )
-
-    # 各プラグインをアクティベートし、日本語化
-    for plugin in "${PLUGINS[@]}"; do
-        echo "  - $plugin"
-        # プラグインがインストールされているか確認
-        if wp plugin is-installed "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
-            # アクティベート（既にアクティブでない場合）
-            if wp plugin activate "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
-                echo "    ✅ $pluginをアクティベートしました"
-            else
-                # 既にアクティブな場合はスキップ
-                if wp plugin is-active "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
-                    echo "    ℹ️  $pluginは既にアクティブです"
-                else
-                    echo "    ⚠️  $pluginのアクティベートに失敗しました"
-                fi
-            fi
-
-            # プラグインの日本語化（毎回実行）
-            echo "    日本語言語パックをインストール中..."
-            wp language plugin install "$plugin" ja --allow-root --path="$WP_ROOT" 2>&1 | grep -v "already installed" || true
-            wp language plugin update "$plugin" --allow-root --path="$WP_ROOT" 2>&1 || true
-        else
-            echo "    ⚠️  $pluginがインストールされていません（Composer installを確認してください）"
-        fi
-    done
-
-    echo ""
-    echo "✅ 標準プラグインのアクティベート・日本語化が完了しました"
-
-    # 日本語化のみ実施するプラグイン（アクティベートしない）
-    if [ ${#PLUGINS_LOCALIZE_ONLY[@]} -gt 0 ]; then
-        echo ""
-        echo "日本語化のみ実施するプラグインを処理中..."
-        for plugin in "${PLUGINS_LOCALIZE_ONLY[@]}"; do
-            echo "  - $plugin（日本語化のみ）"
-            # プラグインがインストールされているか確認
-            if wp plugin is-installed "$plugin" --allow-root --path="$WP_ROOT" 2>/dev/null; then
-                # プラグインの日本語化（毎回実行）
-                echo "    日本語言語パックをインストール中..."
-                wp language plugin install "$plugin" ja --allow-root --path="$WP_ROOT" 2>&1 | grep -v "already installed" || true
-                wp language plugin update "$plugin" --allow-root --path="$WP_ROOT" 2>&1 || true
-                echo "    ✅ $pluginの日本語化が完了しました"
-            else
-                echo "    ⚠️  $pluginがインストールされていません（Composer installを確認してください）"
-            fi
-        done
-        echo ""
-        echo "✅ 日本語化のみ実施するプラグインの処理が完了しました"
-    fi
+    # 標準プラグインのアクティベート
+    # プラグインはComposerでインストール済みなので、アクティベートのみ実行
+    # 注意: プラグインの日本語化はpost-setup.shで実行されます
+    /usr/docker/bin/setup-plugin.sh "$WP_ROOT"
 
     # テーマをアクティベート
     THEME_NAME="${THEME_NAME:-nyardpress}"
     echo "${THEME_NAME}テーマをアクティベート中..."
     wp theme activate "$THEME_NAME" --allow-root --path="$WP_ROOT" || echo "${THEME_NAME}テーマのアクティベートに失敗しました（テーマが存在しない可能性があります）"
-
-    # デフォルトテーマ（twenty*系）を削除
-    # マウントポイントでは、ホスト側に存在するディレクトリは保持され、存在しないディレクトリ（コンテナ内で作成されたもの）のみ削除される
-    echo "デフォルトテーマ（twenty*系）を削除中..."
-    THEMES_DIR="$WP_ROOT/wp-content/themes"
-    if [ -d "$THEMES_DIR" ]; then
-        # twenty*で始まるテーマディレクトリを検索して削除
-        find "$THEMES_DIR" -maxdepth 1 -type d -name "twenty*" 2>/dev/null | while IFS= read -r theme_dir; do
-            if [ -n "$theme_dir" ] && [ -d "$theme_dir" ]; then
-                theme_basename=$(basename "$theme_dir")
-                echo "  削除中: $theme_basename"
-                rm -rf "$theme_dir" || echo "  ⚠️  $theme_basenameの削除に失敗しました"
-            fi
-        done || true
-        echo "✅ デフォルトテーマの削除が完了しました"
-    else
-        echo "⚠️  テーマディレクトリが見つかりません: $THEMES_DIR"
-    fi
 
     echo "WordPressの設定が完了しました"
 else

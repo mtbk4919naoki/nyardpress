@@ -1,81 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# wp-adminとwp-includesの所有者とパーミッションを設定
-# WordPressの公式イメージでは、これらのディレクトリの所有者がrootになっている場合がある
-WP_ADMIN_DIR="/var/www/html/wp-admin"
-WP_INCLUDES_DIR="/var/www/html/wp-includes"
 WP_ROOT="/var/www/html"
-
-# wp-adminとwp-includesの所有者とパーミッションを変更（再帰的に）
-# ディレクトリ: 775、ファイル: 664に設定（chmod()警告を防ぐため）
-if [ -d "$WP_ADMIN_DIR" ]; then
-    chown -R www-data:www-data "$WP_ADMIN_DIR" 2>/dev/null || true
-    find "$WP_ADMIN_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
-    find "$WP_ADMIN_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
-    echo "✅ wp-adminディレクトリの所有者とパーミッションを設定しました"
-fi
-if [ -d "$WP_INCLUDES_DIR" ]; then
-    chown -R www-data:www-data "$WP_INCLUDES_DIR" 2>/dev/null || true
-    find "$WP_INCLUDES_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
-    find "$WP_INCLUDES_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
-    echo "✅ wp-includesディレクトリの所有者とパーミッションを設定しました"
-fi
-
-# wp-contentディレクトリはマウントされているため、所有者変更はスキップ
-# マウントされていない部分（ewwwディレクトリなど）は個別に処理
-WP_CONTENT_DIR="$WP_ROOT/wp-content"
-
-# EWWW Image Optimizer用のディレクトリを事前に作成（コンテナ内なので権限設定可能）
-# wp-content/ewwwはマウントされていないため、コンテナ内で作成・権限設定が可能
-EWWW_DIR="/var/www/html/wp-content/ewww"
-EWWW_BINARIES_DIR="$EWWW_DIR/binaries"
-if [ ! -d "$EWWW_DIR" ]; then
-    mkdir -p "$EWWW_DIR"
-fi
-if [ ! -d "$EWWW_BINARIES_DIR" ]; then
-    mkdir -p "$EWWW_BINARIES_DIR"
-fi
-# 所有者をwww-dataに変更（WordPressが書き込めるように）
-chown -R www-data:www-data "$EWWW_DIR" 2>/dev/null || true
-chmod -R 755 "$EWWW_DIR" 2>/dev/null || true
-
-# W3 Total Cache用のディレクトリを事前に作成（コンテナ内なので権限設定可能）
-# wp-content/cacheとwp-content/w3tc-configはマウントされていないため、コンテナ内で作成・権限設定が可能
-W3TC_CACHE_DIR="/var/www/html/wp-content/cache"
-W3TC_CONFIG_DIR="/var/www/html/wp-content/w3tc-config"
-W3TC_TMP_DIR="$W3TC_CACHE_DIR/tmp"
-if [ ! -d "$W3TC_CACHE_DIR" ]; then
-    mkdir -p "$W3TC_CACHE_DIR"
-fi
-if [ ! -d "$W3TC_CONFIG_DIR" ]; then
-    mkdir -p "$W3TC_CONFIG_DIR"
-fi
-if [ ! -d "$W3TC_TMP_DIR" ]; then
-    mkdir -p "$W3TC_TMP_DIR"
-fi
-# 所有者をwww-dataに変更（WordPressが書き込めるように）
-chown -R www-data:www-data "$W3TC_CACHE_DIR" 2>/dev/null || true
-chown -R www-data:www-data "$W3TC_CONFIG_DIR" 2>/dev/null || true
-chmod -R 755 "$W3TC_CACHE_DIR" 2>/dev/null || true
-chmod -R 755 "$W3TC_CONFIG_DIR" 2>/dev/null || true
-
-# システムにインストールされたツールへのシンボリックリンクを作成
-# EWWWはシステムのツールを使用できるように設定
-if [ -f /usr/bin/jpegtran ]; then
-    ln -sf /usr/bin/jpegtran "$EWWW_BINARIES_DIR/jpegtran-linux" 2>/dev/null || true
-fi
-if [ -f /usr/bin/optipng ]; then
-    ln -sf /usr/bin/optipng "$EWWW_BINARIES_DIR/optipng-linux" 2>/dev/null || true
-fi
-if [ -f /usr/bin/gifsicle ]; then
-    ln -sf /usr/bin/gifsicle "$EWWW_BINARIES_DIR/gifsicle-linux" 2>/dev/null || true
-fi
-if [ -f /usr/bin/cwebp ]; then
-    ln -sf /usr/bin/cwebp "$EWWW_BINARIES_DIR/cwebp-linux" 2>/dev/null || true
-fi
-
-echo "✅ EWWWディレクトリを準備しました: $EWWW_DIR"
 
 # WordPressの標準エントリーポイントを実行（wp-config.phpの生成など）
 # 注意: WordPressの公式イメージは、/var/www/htmlが空の場合にwp core downloadを実行します
@@ -83,24 +9,8 @@ echo "✅ EWWWディレクトリを準備しました: $EWWW_DIR"
 docker-entrypoint.sh "$@" &
 WP_PID=$!
 
-# WordPressの標準エントリーポイントでwp core downloadが実行された場合、
-# wp-adminとwp-includesの所有者がrootになっている可能性があるため、再度パーミッションを設定
+# WordPressの標準エントリーポイントでwp core downloadが実行された場合を考慮して少し待機
 sleep 3
-# wp core download実行後のパーミッション設定
-if [ -d "$WP_ADMIN_DIR" ]; then
-    chown -R www-data:www-data "$WP_ADMIN_DIR" 2>/dev/null || true
-    find "$WP_ADMIN_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
-    find "$WP_ADMIN_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
-fi
-if [ -d "$WP_INCLUDES_DIR" ]; then
-    chown -R www-data:www-data "$WP_INCLUDES_DIR" 2>/dev/null || true
-    find "$WP_INCLUDES_DIR" -type d -exec chmod 775 {} \; 2>/dev/null || true
-    find "$WP_INCLUDES_DIR" -type f -exec chmod 664 {} \; 2>/dev/null || true
-fi
-if [ -f "$WP_ROOT/wp-config.php" ]; then
-    chown www-data:www-data "$WP_ROOT/wp-config.php" 2>/dev/null || true
-    chmod 640 "$WP_ROOT/wp-config.php" 2>/dev/null || true
-fi
 
 # データベース接続情報を環境変数から取得
 DB_HOST="${WORDPRESS_DB_HOST:-db}"
@@ -156,42 +66,8 @@ for i in {1..30}; do
     sleep 1
 done
 
-# WordPressの標準エントリーポイントでwp core downloadが実行された場合、
-# twenty系テーマとデフォルトプラグインがダウンロードされる可能性があるため、削除する
-# この処理はsetup.shの実行前後に関係なく実行する
-
-# デフォルトテーマ（twenty*系）を削除
-echo "デフォルトテーマ（twenty*系）を削除中..."
-THEMES_DIR="/var/www/html/wp-content/themes"
-if [ -d "$THEMES_DIR" ]; then
-    # twenty*で始まるテーマディレクトリを検索して削除
-    find "$THEMES_DIR" -maxdepth 1 -type d -name "twenty*" 2>/dev/null | while IFS= read -r theme_dir; do
-        if [ -n "$theme_dir" ] && [ -d "$theme_dir" ]; then
-            theme_basename=$(basename "$theme_dir")
-            echo "  削除中: $theme_basename"
-            rm -rf "$theme_dir" || echo "  ⚠️  $theme_basenameの削除に失敗しました"
-        fi
-    done || true
-    echo "✅ デフォルトテーマの削除が完了しました"
-fi
-
-# デフォルトプラグイン（Akismet、HelloDolly）を削除
-echo "デフォルトプラグイン（Akismet、HelloDolly）を削除中..."
-PLUGINS_DIR="/var/www/html/wp-content/plugins"
-if [ -d "$PLUGINS_DIR" ]; then
-    # Akismetプラグインを削除
-    if [ -d "$PLUGINS_DIR/akismet" ]; then
-        echo "  削除中: akismet"
-        rm -rf "$PLUGINS_DIR/akismet" || echo "  ⚠️  akismetの削除に失敗しました"
-    fi
-
-    # HelloDollyプラグインを削除
-    if [ -f "$PLUGINS_DIR/hello.php" ]; then
-        echo "  削除中: hello-dolly"
-        rm -f "$PLUGINS_DIR/hello.php" || echo "  ⚠️  hello-dollyの削除に失敗しました"
-    fi
-    echo "✅ デフォルトプラグインの削除が完了しました"
-fi
+# 初期化処理を実行（毎回実行）
+/usr/docker/bin/init.sh "$WP_ROOT"
 
 # setup.shを実行（初回起動時のみ）
 # WordPressのインストール状態を直接確認（wp core is-installedで判定）
@@ -202,63 +78,8 @@ if [ -f /usr/docker/bin/setup.sh ]; then
         # wp core is-installedで判定（データベース接続が必要なので、接続確認後に実行）
         if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
             echo "ℹ️  WordPressは既にインストール済みです"
-            # 日本語化とパーマリンク設定は毎回実行（再起動時に設定が消えるのを防ぐ）
-            # データベース接続を確認してから実行
-            if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
-                # パーマリンク構造を設定（毎回実行）
-                echo "パーマリンク構造を設定中..."
-                wp rewrite structure '/%postname%/' --allow-root --path="/var/www/html" 2>&1 || echo "⚠️  パーマリンク構造の設定に失敗しました"
-                wp rewrite flush --allow-root --path="/var/www/html" 2>&1 || echo "⚠️  パーマリンクのフラッシュに失敗しました"
-                echo "✅ パーマリンク構造を設定しました"
-
-                # 日本語化の処理（毎回実行）
-                echo "日本語言語パックを設定中..."
-                # 日本語パックをインストール（既にインストール済みの場合は更新）
-                wp language core install ja --allow-root --path="/var/www/html" 2>&1 | grep -v "already installed" || true
-                # サイトの言語を日本語に切り替え（非推奨のactivateの代わり）
-                wp site switch-language ja --allow-root --path="/var/www/html" 2>&1 || {
-                    # フォールバック: 古いコマンドを使用
-                    wp language core activate ja --allow-root --path="/var/www/html" 2>&1 || true
-                }
-                # WPLANGオプションも明示的に設定
-                wp option update WPLANG ja --allow-root --path="/var/www/html" 2>&1 || true
-                # 管理ユーザーの言語設定も日本語に変更
-                ADMIN_USER="${WORDPRESS_ADMIN_USER:-nyardpress}"
-                ADMIN_USER_ID=$(wp user get "$ADMIN_USER" --allow-root --path="/var/www/html" --field=ID 2>/dev/null || echo "")
-                if [ -n "$ADMIN_USER_ID" ]; then
-                    wp user update "$ADMIN_USER" --locale=ja --allow-root --path="/var/www/html" 2>&1 || true
-                    wp user meta update "$ADMIN_USER_ID" locale ja --allow-root --path="/var/www/html" 2>&1 || true
-                fi
-                echo "✅ 日本語言語パックを設定しました"
-
-                # プラグインの日本語化（毎回実行）
-                echo "プラグインの日本語言語パックをインストール中..."
-                PLUGINS=(
-                    "wp-multibyte-patch"
-                    "wordpress-seo"
-                    "query-monitor"
-                    "cloudsecure-wp-security"
-                    "wp-crontrol"
-                    "taxonomy-terms-order"
-                    "simple-page-ordering"
-                    "wp-mail-smtp"
-                    "w3-total-cache"
-                    "ewww-image-optimizer"
-                    "updraftplus"
-                    "all-in-one-wp-migration"
-                    "wordpress-importer"
-                    "redirection"
-                )
-                for plugin in "${PLUGINS[@]}"; do
-                    if wp plugin is-installed "$plugin" --allow-root --path="/var/www/html" 2>/dev/null; then
-                        wp language plugin install "$plugin" ja --allow-root --path="/var/www/html" 2>&1 | grep -v "already installed" || true
-                        wp language plugin update "$plugin" --allow-root --path="/var/www/html" 2>&1 || true
-                    fi
-                done
-                echo "✅ プラグインの日本語言語パックを設定しました"
-            else
-                echo "⚠️  データベース接続が確立されていないため、設定をスキップします"
-            fi
+            # post-setup.shでWordPress設定を実行
+            /usr/docker/bin/post-setup.sh "$WP_ROOT" || true
         else
             echo "=========================================="
             echo "🚀 WordPressが未インストールのため、setup.shを実行中..."
@@ -271,6 +92,8 @@ if [ -f /usr/docker/bin/setup.sh ]; then
                 echo "=========================================="
                 echo "✅ setup.shの実行が完了しました"
                 echo "=========================================="
+                # setup.sh完了後、WordPress設定を実行
+                /usr/docker/bin/post-setup.sh "$WP_ROOT" || true
             else
                 echo "=========================================="
                 echo "⚠️  setup.shの実行に失敗しました (終了コード: $setup_exit_code)"
@@ -291,6 +114,8 @@ if [ -f /usr/docker/bin/setup.sh ]; then
             echo "=========================================="
             echo "✅ setup.shの実行が完了しました"
             echo "=========================================="
+            # setup.sh完了後、WordPress設定を実行
+            /usr/docker/bin/post-setup.sh "$WP_ROOT" || true
         else
             echo "=========================================="
             echo "⚠️  setup.shの実行に失敗しました (終了コード: $setup_exit_code)"

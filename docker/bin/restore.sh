@@ -42,9 +42,15 @@ echo "=========================================="
 echo "  ダンプファイル: $DUMP_NAME"
 echo ""
 
+# 一時作業ディレクトリを作成
+TEMP_DIR="$DUMP_DIR/temp"
+mkdir -p "$TEMP_DIR"
+# エラー時にも一時ディレクトリを削除するように設定
+trap "rm -rf '$TEMP_DIR'" EXIT
+
 # 圧縮ファイルを展開
 echo "📦 ダンプファイルを展開中..."
-cd "$DUMP_DIR"
+cd "$TEMP_DIR"
 if tar -xzf "$TAR_FILE" 2>/dev/null; then
     echo "  ✅ 展開が完了しました"
 else
@@ -55,7 +61,7 @@ fi
 # データベースの復元
 echo ""
 echo "📊 データベースを復元中..."
-SQL_FILE="$DUMP_DIR/sql/${DUMP_NAME}.sql"
+SQL_FILE="$TEMP_DIR/${DUMP_NAME}.sql"
 
 if [ -f "$SQL_FILE" ]; then
     # データベースを空にする（既存のデータを削除）
@@ -83,10 +89,10 @@ fi
 # メディアファイルの復元
 echo ""
 echo "📁 メディアファイルを復元中..."
-UPLOADS_SOURCE="$DUMP_DIR/uploads/${DUMP_NAME}"
+UPLOADS_SOURCE="$TEMP_DIR/uploads"
 UPLOADS_DEST="$WP_ROOT/wp-content/uploads"
 
-if [ -d "$UPLOADS_SOURCE" ]; then
+if [ -d "$UPLOADS_SOURCE" ] && [ "$(ls -A $UPLOADS_SOURCE 2>/dev/null)" ]; then
     # 既存のuploadsディレクトリをバックアップ（存在する場合）
     if [ -d "$UPLOADS_DEST" ] && [ "$(ls -A $UPLOADS_DEST 2>/dev/null)" ]; then
         BACKUP_DIR="${UPLOADS_DEST}_backup_$(date +%Y%m%d_%H%M%S)"
@@ -104,17 +110,14 @@ if [ -d "$UPLOADS_SOURCE" ]; then
         echo "  ⚠️  メディアファイルの復元に失敗しました（スキップします）"
     fi
 else
-    echo "  ℹ️  メディアファイルが存在しません（スキップします）"
+    echo "  ℹ️  メディアファイルが存在しないか、空です（スキップします）"
 fi
 
-# 展開したファイルを削除（圧縮ファイルのみ残す）
+# 一時ディレクトリを削除（圧縮ファイルのみ残す）
 echo ""
-echo "🧹 展開したファイルを削除中..."
-rm -f "sql/${DUMP_NAME}.sql"
-if [ -d "uploads/${DUMP_NAME}" ]; then
-    rm -rf "uploads/${DUMP_NAME}"
-fi
-echo "  ✅ 展開したファイルを削除しました"
+echo "🧹 一時ファイルを削除中..."
+rm -rf "$TEMP_DIR"
+echo "  ✅ 一時ファイルを削除しました"
 
 echo ""
 echo "=========================================="
