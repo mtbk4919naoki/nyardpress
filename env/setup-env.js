@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { loadConfig } = require('./config');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -34,24 +35,14 @@ function loadEnvFile(envPath) {
 
 // .envファイルを保存する関数
 function saveEnvFile(envPath, env) {
-  const samplePath = path.join(__dirname, '.env.sample');
+  const samplePath = path.join(__dirname, '..', '.env.sample');
   let template = '';
 
   if (fs.existsSync(samplePath)) {
     template = fs.readFileSync(samplePath, 'utf8');
   } else {
-    // デフォルトテンプレート
-    template = `# WordPress開発環境設定ファイル
-# ============================================
-# このファイルをコピーして .env として使用してください
-# ============================================
-
-# WordPressポート番号（デフォルト: 8080）
-WORDPRESS_PORT=8080
-
-# テーマ名（デフォルト: nyardpress）
-THEME_NAME=nyardpress
-`;
+    console.error('❌ .env.sampleが存在しません');
+    process.exit(1);
   }
 
   // 環境変数を置換
@@ -79,7 +70,7 @@ THEME_NAME=nyardpress
 async function main() {
   console.log('🚀 WordPress開発環境セットアップ\n');
 
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(__dirname, '..', '.env');
   const existingEnv = loadEnvFile(envPath);
 
   // 既存の.envファイルから値を読み込む
@@ -90,9 +81,15 @@ async function main() {
   // 設定値を確認
   console.log('📝 設定値（Enterで既存の値またはデフォルト値を使用）\n');
 
+  // 設定ファイルからテーマ名を読み取る
+  const config = loadConfig();
+
   const prompts = [
-    { key: 'WORDPRESS_PORT', label: 'WordPressポート番号', default: existingEnv.WORDPRESS_PORT || '8080' },
-    { key: 'THEME_NAME', label: 'テーマ名', default: existingEnv.THEME_NAME || 'nyardpress' },
+    { key: 'WP_PORT', label: 'WordPressポート番号', default: existingEnv.WP_PORT || '8080' },
+    { key: 'DB_PORT', label: 'MySQLポート番号', default: existingEnv.DB_PORT || '3306' },
+    { key: 'SMTP_PORT', label: 'SMTPポート番号', default: existingEnv.SMTP_PORT || '1025' },
+    { key: 'MAILPIT_PORT', label: 'Mailpitポート番号', default: existingEnv.MAILPIT_PORT || '8025' },
+    { key: 'VITE_PORT', label: 'Viteポート番号', default: existingEnv.VITE_PORT || '3000' },
   ];
 
   for (const prompt of prompts) {
@@ -100,19 +97,20 @@ async function main() {
     env[prompt.key] = value.trim() || prompt.default;
   }
 
+  // 設定ファイルからテーマ名を.envファイルに書き込む（docker-compose.ymlで環境変数として使用）
+  env.THEME_NAME = config.themeName;
+
   // .envファイルを保存
   saveEnvFile(envPath, env);
   console.log(`\n✅ .envファイルを作成しました: ${envPath}`);
 
   console.log('\n✨ セットアップが完了しました！');
   console.log(`\n📋 設定内容:`);
-  console.log(`   WordPressポート: ${env.WORDPRESS_PORT}`);
-  console.log(`   テーマ名: ${env.THEME_NAME}`);
-  console.log(`\n📝 注意:`);
-  console.log(`   MySQL設定とWordPress管理ユーザー情報は docker-compose.yml に直接設定されています`);
-  console.log(`   変更する場合は docker-compose.yml を編集してください`);
-  console.log(`\n🚀 次のステップ:`);
-  console.log(`   npm run setup でComposer依存関係をインストールしてコンテナを起動してください`);
+  console.log(`   WordPressポート: ${env.WP_PORT}`);
+  console.log(`   MySQLポート: ${env.DB_PORT}`);
+  console.log(`   SMTPポート: ${env.SMTP_PORT}`);
+  console.log(`   Mailpitポート: ${env.MAILPIT_PORT}`);
+  console.log(`   テーマ名: ${config.themeName}`);
 
   rl.close();
 }

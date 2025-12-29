@@ -12,10 +12,10 @@ if [ -z "$DUMP_NAME" ]; then
     echo "❌ ダンプファイル名を指定してください"
     echo ""
     echo "使用方法:"
-    echo "  /usr/docker/bin/restore.sh <ダンプファイル名>"
+    echo "  /opt/docker/bin/restore.sh <ダンプファイル名>"
     echo ""
     echo "例:"
-    echo "  /usr/docker/bin/restore.sh wordpress_dump_20240101_120000"
+    echo "  /opt/docker/bin/restore.sh wordpress_dump_20240101_120000"
     exit 1
 fi
 

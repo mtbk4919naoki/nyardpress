@@ -123,15 +123,26 @@ www/htdocs/wp-content/languages/*
 !www/htdocs/wp-content/languages/.gitkeep
 
 # ============================================
+# テーマ開発環境
+# ============================================
+# テーマ内の開発環境ファイル
+www/htdocs/wp-content/themes/*/src/
+www/htdocs/wp-content/themes/*/dev/
+www/htdocs/wp-content/themes/*/node_modules/
+www/htdocs/wp-content/themes/*/package-lock.json
+www/htdocs/wp-content/themes/*/yarn.lock
+www/htdocs/wp-content/themes/*/.env
+www/htdocs/wp-content/themes/*/.env.local
+www/htdocs/wp-content/themes/*/dist/
+www/htdocs/wp-content/themes/*/assets/.vite/
+www/htdocs/wp-content/themes/*/tsconfig.tsbuildinfo
+
+# ============================================
 # Docker関連
 # ============================================
 .docker/
 # ダンプファイル（エクスポートされたファイル）
-docker/dump/*.tar.gz
-docker/dump/sql/*.sql
-docker/dump/uploads/*
-!docker/dump/sql/.gitkeep
-!docker/dump/uploads/.gitkeep
+!docker/dump/*
 # ログディレクトリ（すべてのファイルを除外）
 docker/log/*
 !docker/log/.gitkeep

@@ -1,10 +1,4 @@
 <?php
-/**
- * Plugin Name: Site Core
- * Description: カスタム投稿タイプ、カスタムタクソノミー、Carbon Fieldsを管理するMUプラグイン
- * Version: 1.0.0
- * Author: Nyardpress
- */
 
 // このファイルが直接アクセスされた場合は終了
 if (!defined('ABSPATH')) {

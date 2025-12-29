@@ -30,25 +30,28 @@ npm run setup:env
 ```
 
 対話形式で以下の設定を行います：
-- プロジェクト名
-- テーマ名（デフォルトはプロジェクト名と同じ）
-- WordPress URL、ポート番号
-- データベース設定
-- 管理画面の認証情報
+- WordPressポート番号（デフォルト: 8080）
+- MySQLポート番号（デフォルト: 3306）
+- SMTPポート番号（デフォルト: 1025）
+- Mailpitポート番号（デフォルト: 8025）
+
+テーマ名は`nyardpress.config.json`から自動的に読み込まれます。
 
 ### 2. セットアップとDockerコンテナの起動
 
 ```bash
-# Composer依存関係のインストールとDockerコンテナの起動
+# 環境変数設定、Composer依存関係のインストール、Dockerコンテナのビルドと起動（推奨）
 npm run setup
 ```
 
-このコマンドで以下が実行されます：
-1. **Composer依存関係のインストール**（ホスト側）
+このコマンドで以下が順番に実行されます：
+1. **環境変数ファイルの作成**（`npm run setup:env`）
+2. **Composer依存関係のインストール**（`npm run dc:install`）
    - プラグイン（`www/htdocs/wp-content/plugins/composer.json`）
    - テーマ（`www/htdocs/wp-content/themes/{THEME_NAME}/composer.json`）
    - MUプラグイン（`www/htdocs/wp-content/mu-plugins/site-core/composer.json`）
-2. **Dockerコンテナのビルドと起動**
+   - 各ディレクトリに`package.json`がある場合は`npm install`も実行
+3. **Dockerコンテナのビルドと起動**（`npm run dc:build`）
    - 初回起動時は、自動的に以下が実行されます：
      - WordPressのインストール
      - 日本語言語パックのインストール
@@ -58,10 +61,13 @@ npm run setup
 **個別に実行する場合：**
 
 ```bash
-# Composer依存関係のみインストール
-npm run dc:setup
+# 環境変数ファイルの作成
+npm run setup:env
 
-# Dockerコンテナのみ起動
+# Composerとnpmの依存関係をインストール
+npm run dc:install
+
+# Dockerコンテナのビルドと起動
 npm run dc:build
 ```
 
@@ -75,6 +81,9 @@ ls docker/dump/*.tar.gz
 
 # ダンプファイルを復元（ファイル名から拡張子を除いた名前を指定）
 npm run dc:restore wordpress_dump_20251225_132220
+
+# 最新のダンプファイルを自動選択して復元
+npm run restore
 ```
 
 **注意：** ダンプファイルがない場合は、この手順をスキップして次に進んでください。
@@ -96,10 +105,15 @@ nyardpress/
 │       ├── docker-entrypoint.sh
 │       └── setup.sh          # WordPress初期セットアップ
 ├── env/                      # 環境設定スクリプト
-│   ├── .env.sample          # 環境変数テンプレート
 │   ├── setup-env.js         # 環境変数セットアップ
+│   ├── config.js            # 設定ファイル読み込み
+│   ├── dc-install.js        # Composer依存関係インストール
 │   ├── dc-build.js          # Docker Composeビルド
-│   └── dc-destory.js        # Docker Compose削除
+│   ├── dc-destory.js        # Docker Compose削除
+│   ├── dc-dump.js           # データベースダンプ
+│   └── dc-restore.js        # データベース復元
+├── .env                      # 環境変数ファイル（プロジェクトルート、gitignore）
+├── nyardpress.config.json   # プロジェクト設定ファイル（テーマ名など）
 ├── www/htdocs/               # WordPressドキュメントルート
 │   ├── wp-content/
 │   │   ├── themes/
@@ -128,120 +142,85 @@ npm run setup:env
 ### セットアップと起動
 
 ```bash
-# Composer依存関係のインストールとDockerコンテナの起動（推奨）
+# 環境変数設定、Composer依存関係のインストール、Dockerコンテナのビルドと起動（推奨）
 npm run setup
 
 # 個別に実行する場合
-npm run dc:setup  # Composer依存関係のみインストール
-npm run dc:build  # Dockerコンテナのみ起動
+npm run setup:env    # 環境変数ファイルの作成
+npm run dc:install   # Composer依存関係のみインストール
+npm run dc:build     # Dockerコンテナのビルドと起動
 ```
 
 ### Docker管理
 
 ```bash
+# コンテナの起動（既にビルド済みの場合）
+npm run start
+
 # コンテナのビルドと起動
 npm run dc:build
 
 # コンテナの停止と削除（ボリュームも削除）
 npm run dc:destroy
+
+# 完全に再構築（削除→インストール→ビルド）
+npm run rebuild
 ```
 
 ### データベースのダンプと復元
 
 ```bash
 # データベースとメディアファイルをダンプ
-npm run dc:dump
+npm run dump
 
 # ダンプ名を指定してダンプ（オプション）
 npm run dc:dump production
 
-# ダンプファイルを復元
+# ダンプファイルを復元（ファイル名を指定）
 npm run dc:restore wordpress_dump_20251225_132220
+
+# 最新のダンプファイルを自動選択して復元
+npm run restore
 ```
 
-### 開発用コマンド（今後実装予定）
+**テーマディレクトリ内でのコマンド：**
 
 ```bash
-# 開発サーバー起動
+# テーマディレクトリに移動
+cd www/htdocs/wp-content/themes/nyardpress
+
+# 依存関係のインストール
+npm install
+
+# 開発モード（ファイル監視）
 npm run dev
 
-# ビルド
+# 本番ビルド
 npm run build
 
-# データベースエクスポート
-npm run db:export
-
-# データベースインポート
-npm run db:import
-
-# デプロイ
-npm run deploy:dev
-npm run deploy:stg
-npm run deploy:prod
+# TypeScriptの型チェック
+npm run type-check
 ```
+
+詳細は `www/htdocs/wp-content/themes/nyardpress/README.md` を参照してください。
+
+### コマンド一覧表
+
+| コマンド | 説明 |
+|---------|------|
+| `npm run setup` | 環境変数設定、依存関係インストール、コンテナビルド（初回セットアップ推奨） |
+| `npm run setup:env` | 環境変数ファイル（`.env`）の作成（対話形式） |
+| `npm run dc:install` | Composer依存関係のインストール |
+| `npm run dc:build` | Dockerコンテナのビルドと起動 |
+| `npm run start` | コンテナの起動（既にビルド済みの場合） |
+| `npm run rebuild` | コンテナの完全再構築（削除→インストール→ビルド） |
+| `npm run dc:destroy` | コンテナの停止と削除（ボリュームも削除） |
+| `npm run dump` | データベースとメディアファイルのダンプ |
+| `npm run dc:dump [名前]` | ダンプ名を指定してダンプ |
+| `npm run restore` | 最新のダンプファイルを自動選択して復元 |
+| `npm run dc:restore [ファイル名]` | 指定したダンプファイルを復元 |
 
 ## 開発ガイド
-
-### カスタム投稿タイプの追加
-
-1. `www/htdocs/wp-content/mu-plugins/site-core/posttypes/` にPHPファイルを作成
-2. `example-posttype.php` を参考に実装
-3. ファイル名は `example-` で始めると自動的に読み込まれません（サンプル用）
-
-```php
-// posttypes/my-posttype.php
-function register_my_post_type() {
-    $labels = array(
-        'name' => 'マイ投稿',
-        // ...
-    );
-    $args = array(
-        'labels' => $labels,
-        'public' => true,
-        // ...
-    );
-    register_post_type('my_posttype', $args);
-}
-add_action('init', 'register_my_post_type');
-```
-
-### カスタムタクソノミーの追加
-
-1. `www/htdocs/wp-content/mu-plugins/site-core/taxonomies/` にPHPファイルを作成
-2. `example-category.php` を参考に実装
-
-```php
-// taxonomies/my-taxonomy.php
-function register_my_taxonomy() {
-    $args = array(
-        'hierarchical' => true,
-        'public' => true,
-        // ...
-    );
-    register_taxonomy('my_taxonomy', array('post'), $args);
-}
-add_action('init', 'register_my_taxonomy', 0);
-```
-
-### Carbon Fieldsでカスタムフィールドを追加
-
-1. `www/htdocs/wp-content/mu-plugins/site-core/fields/` にPHPファイルを作成
-2. `example-fields.php` を参考に実装
-
-```php
-// fields/my-fields.php
-use Carbon_Fields\Container;
-use Carbon_Fields\Field;
-
-function add_my_custom_fields() {
-    Container::make('post_meta', '追加情報')
-        ->where('post_type', '=', 'my_posttype')
-        ->add_fields(array(
-            Field::make('text', 'my_field', 'カスタムフィールド'),
-        ));
-}
-add_action('carbon_fields_register_fields', 'add_my_custom_fields');
-```
 
 ### テーマのカスタマイズ
 
@@ -264,52 +243,43 @@ add_action('carbon_fields_register_fields', 'add_my_custom_fields');
 - `archive.php` - アーカイブページ
 - `404.php` - 404ページ
 
-### ユーティリティ関数
+### Site Core（MUプラグイン）
 
-#### use_transient
-
-キャッシュ機能を提供します。ログイン中のユーザーはキャッシュを無視します。
-
-```php
-$value = use_transient('cache_key', function() {
-    // 重い処理
-    return expensive_operation();
-}, 3600); // 1時間キャッシュ
-```
-
-#### safe_log
-
-安全にログを出力します。制御文字を自動的にサニタイズします。
-
-```php
-safe_log('エラーメッセージ', 'error', ['context' => 'value']);
-```
+カスタム投稿タイプ、カスタムタクソノミー、Carbon Fields、ユーティリティ関数の詳細は、`www/htdocs/wp-content/mu-plugins/site-core/README.md` を参照してください。
 
 ## 環境変数
 
-`.env`ファイルで以下の設定が可能です：
+プロジェクトルートの`.env`ファイルで以下の設定が可能です：
 
-- `PROJECT_NAME` - プロジェクト名（コンテナ名などに使用）
-- `THEME_NAME` - テーマ名
-- `WORDPRESS_URL` - WordPressのURL
-- `WORDPRESS_PORT` - ポート番号
-- `WORDPRESS_DB_*` - データベース接続情報
-- `WORDPRESS_ADMIN_*` - 管理画面の認証情報
+### ポート設定
 
-詳細は `env/.env.sample` を参照してください。
+- `WP_PORT` - WordPressポート番号（デフォルト: 8080）
+- `DB_PORT` - MySQLポート番号（デフォルト: 3306）
+- `SMTP_PORT` - SMTPポート番号（デフォルト: 1025）
+- `MAILPIT_PORT` - Mailpit Web UIポート番号（デフォルト: 8025）
 
-## デバッグ設定
+### テーマ設定
 
-開発環境では、以下のデバッグ設定が自動的に有効になります：
+- `THEME_NAME` - テーマ名（`nyardpress.config.json`から自動設定、デフォルト: nyardpress）
 
-- `WP_DEBUG = true`
-- `WP_DEBUG_DISPLAY = true`
-- `WP_DEBUG_LOG = true`
-- `WP_DEBUG_LOG_FILE = /var/www/html/wp-content/debug.log`
-- `SCRIPT_DEBUG = true`
+### Vite開発サーバー設定
+
+テーマ開発でViteを使用する場合、テーマ側の`.env`ファイル（`www/htdocs/wp-content/themes/{テーマ名}/.env`）でViteのポート番号を設定します。
+
+**重要**: テーマ側の`.env`ファイルの`VITE_PORT`と、Docker側の`.env`ファイルの`VITE_PORT`（`setup-env.js`で設定）は同じ値に設定してください。異なる値を設定すると、Vite開発サーバーに接続できません。
+
+- テーマ側: `www/htdocs/wp-content/themes/{テーマ名}/.env` → `VITE_PORT=3000`
+- Docker側: プロジェクトルートの`.env` → `VITE_PORT=3000`（`setup-env.js`で設定可能）
+
+### デバッグ設定
+
+- `WP_DEBUG` - WordPressデバッグモード（デフォルト: true）
+
+**注意**: `.env`ファイルで`WP_DEBUG=false`に設定すると、ビルド済みファイルの検証が可能です。
 
 エラーログは以下の場所で確認できます：
-- ファイル: `www/htdocs/wp-content/debug.log`
+- WordPressデバッグログ: `docker/log/debug.log`
+- PHPエラーログ: `docker/log/php-error.log`
 - Dockerログ: `docker logs nyardpress_wordpress`
 
 ## セキュリティ
@@ -340,17 +310,7 @@ docker exec -it nyardpress_wordpress wp core is-installed --allow-root
 
 # 未インストールの場合は、wp-config.phpを削除して再起動
 docker exec -it nyardpress_wordpress rm /var/www/html/wp-config.php
-docker-compose restart wordpress
-```
-
-### Composer依存関係の再インストール
-
-コンテナ内で実行：
-
-```bash
-docker exec -it nyardpress_wordpress bash
-cd /var/www/html/wp-content/themes/nyardpress
-composer install
+docker compose restart wordpress
 ```
 
 ## ライセンス

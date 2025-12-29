@@ -5,19 +5,13 @@ const path = require('path');
 const fs = require('fs');
 
 const projectRoot = path.join(__dirname, '..');
+const { loadConfig } = require('./config');
 
-// .envファイルからTHEME_NAMEを読み取る
-let themeName = 'nyardpress'; // デフォルト値
-const envPath = path.join(projectRoot, 'env', '.env');
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const themeMatch = envContent.match(/^THEME_NAME=(.+)$/m);
-  if (themeMatch) {
-    themeName = themeMatch[1].trim();
-  }
-}
+// 設定ファイルからテーマ名を読み取る
+const config = loadConfig();
+const themeName = config.themeName;
 
-console.log('📦 テーマとプラグインのComposer依存関係をインストール中...');
+console.log('📦 テーマとプラグインのComposer依存関係とnpm依存関係をインストール中...');
 
 // Composer installを実行するディレクトリのリスト
 const composerDirs = [
@@ -69,12 +63,28 @@ for (const dir of composerDirs) {
   } else {
     console.log(`ℹ️  ${dir} にcomposer.jsonが見つかりません（スキップします）`);
   }
+
+  // package.jsonが存在する場合はnpm installを実行
+  const packageJson = path.join(fullPath, 'package.json');
+  if (fs.existsSync(packageJson)) {
+    console.log(`\n📦 ${dir} のnpm installを実行中...`);
+    try {
+      execSync('npm install', {
+        stdio: 'inherit',
+        cwd: fullPath
+      });
+      console.log(`✅ ${dir} のnpm installが完了しました`);
+    } catch (error) {
+      console.error(`❌ ${dir} のnpm installに失敗しました`);
+      hasError = true;
+    }
+  }
 }
 
 if (hasError) {
-  console.error('\n❌ 一部のComposer installに失敗しました');
+  console.error('\n❌ 一部の依存関係のインストールに失敗しました');
   process.exit(1);
 } else {
-  console.log('\n✅ すべてのComposer installが完了しました');
+  console.log('\n✅ すべての依存関係のインストールが完了しました');
 }
 

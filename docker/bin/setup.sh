@@ -26,6 +26,13 @@ DB_PASSWORD="${WORDPRESS_DB_PASSWORD:-wordpress}"
 DB_NAME="${WORDPRESS_DB_NAME:-wordpress}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-rootpassword}"
 
+# 開発環境用のデバッグ設定を追加
+# 環境変数から読み込む（.envファイルで設定可能）
+WP_DEBUG_VALUE="${WP_DEBUG:-true}"
+WP_DEBUG_DISPLAY_VALUE="${WP_DEBUG_DISPLAY:-true}"
+WP_DEBUG_LOG_VALUE="${WP_DEBUG_LOG:-true}"
+WP_DEBUG_LOG_FILE_VALUE="${WP_DEBUG_LOG_FILE:-$WP_ROOT/docker/log/debug.log}"
+
 # データベース接続を確認
 echo "データベース接続を確認中..."
 max_db_attempts=30
@@ -116,60 +123,24 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     # Mailpit設定はMUプラグイン（site-core/mail/mailpit.php）で管理
     echo "✅ Mailpit設定はMUプラグインで管理されます"
 
-    # 開発環境用のデバッグ設定を追加
-    echo "開発環境用のデバッグ設定を追加中..."
-    wp config set WP_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUGの設定に失敗しました"
-    wp config set WP_DEBUG_DISPLAY true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_DISPLAYの設定に失敗しました"
-    wp config set WP_DEBUG_LOG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOGの設定に失敗しました"
-    wp config set WP_DEBUG_LOG_FILE "$WP_ROOT/wp-content/debug.log" --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOG_FILEの設定に失敗しました"
-    wp config set SCRIPT_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  SCRIPT_DEBUGの設定に失敗しました"
-
-    # WordPressのアップデート時にデフォルトテーマが再インストールされるのを防ぐ
-    if ! wp config has CORE_UPGRADE_SKIP_NEW_BUNDLED --allow-root --path="$WP_ROOT" 2>/dev/null; then
-        wp config set CORE_UPGRADE_SKIP_NEW_BUNDLED true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  CORE_UPGRADE_SKIP_NEW_BUNDLEDの設定に失敗しました"
-    fi
-
-
-    # PHPエラーログをdocker/logディレクトリと標準出力の両方に出力するように設定
-    # wp-config.phpに直接追加
-    if ! grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
-        echo "" >> "$WP_ROOT/wp-config.php"
-        echo "/* 開発環境用: PHPエラーログをdocker/logディレクトリと標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
-        echo "if (WP_DEBUG) {" >> "$WP_ROOT/wp-config.php"
-        echo "    ini_set('log_errors', 1);" >> "$WP_ROOT/wp-config.php"
-        echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
-        echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
-        echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
-        echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
-        echo "    }" >> "$WP_ROOT/wp-config.php"
-        echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
-        echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
-        echo "    ini_set('display_startup_errors', 1);" >> "$WP_ROOT/wp-config.php"
-        echo "    error_reporting(E_ALL);" >> "$WP_ROOT/wp-config.php"
-        echo "}" >> "$WP_ROOT/wp-config.php"
-        echo "✅ デバッグ設定を追加しました"
-    else
-        echo "✅ デバッグ設定は既に追加されています"
-    fi
-
     # WordPressをインストール
-    # 環境変数から管理ユーザー情報を取得（docker-compose.ymlから設定される）
-    ADMIN_USER="${WORDPRESS_ADMIN_USER:-admin}"
-    ADMIN_PASSWORD="${WORDPRESS_ADMIN_PASSWORD:-admin}"
-    ADMIN_EMAIL="${WORDPRESS_ADMIN_EMAIL:-admin@example.com}"
+    ADMIN_USER="${WORDPRESS_ADMIN_USER:-nyardpress}"
+    ADMIN_PASSWORD="${WORDPRESS_ADMIN_PASSWORD:-supercat}"
+    ADMIN_EMAIL="${WORDPRESS_ADMIN_EMAIL:-admin@nyardpress.jp}"
 
     echo "WordPressをインストール中..."
-    echo "  URL: ${WORDPRESS_URL:-http://localhost:8080}"
-    echo "  タイトル: ${WORDPRESS_TITLE:-Nyardpress}"
-    echo "  管理者ユーザー: $ADMIN_USER"
-    echo "  管理者メール: $ADMIN_EMAIL"
+    echo "  URL: http://localhost:${WP_PORT:-8080}"
+    echo "  タイトル: ${THEME_NAME:-nyardpress}"
+    echo "  管理者ユーザー: ${ADMIN_USER}"
+    echo "  管理者パスワード: ${ADMIN_PASSWORD}"
+    echo "  管理者メール: ${ADMIN_EMAIL}"
 
     if wp core install \
-        --url="${WORDPRESS_URL:-http://localhost:8080}" \
-        --title="${WORDPRESS_TITLE:-Nyardpress}" \
-        --admin_user="$ADMIN_USER" \
-        --admin_password="$ADMIN_PASSWORD" \
-        --admin_email="$ADMIN_EMAIL" \
+        --url="http://localhost:${WP_PORT:-8080}" \
+        --title="${THEME_NAME:-nyardpress}" \
+        --admin_user="${ADMIN_USER}" \
+        --admin_password="${ADMIN_PASSWORD}" \
+        --admin_email="${ADMIN_EMAIL}" \
         --allow-root \
         --path="$WP_ROOT" 2>&1; then
         echo "✅ WordPressのインストールが完了しました"
@@ -215,41 +186,42 @@ else
             wp user update "$ADMIN_USER" --user_pass="$ADMIN_PASSWORD" --user_email="$ADMIN_EMAIL" --allow-root --path="$WP_ROOT" 2>/dev/null || echo "⚠️  パスワードの更新にも失敗しました"
         }
     fi
+fi
 
-    # 既存のwp-config.phpにもデバッグ設定を追加（存在しない場合）
-    if [ -f "$WP_ROOT/wp-config.php" ]; then
-        echo "既存のwp-config.phpにデバッグ設定を確認中..."
-        if ! wp config has WP_DEBUG --allow-root --path="$WP_ROOT" 2>/dev/null; then
-            echo "開発環境用のデバッグ設定を追加中..."
-            wp config set WP_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUGの設定に失敗しました"
-            wp config set WP_DEBUG_DISPLAY true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_DISPLAYの設定に失敗しました"
-            wp config set WP_DEBUG_LOG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOGの設定に失敗しました"
-            wp config set WP_DEBUG_LOG_FILE "$WP_ROOT/wp-content/debug.log" --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOG_FILEの設定に失敗しました"
-            wp config set SCRIPT_DEBUG true --raw --allow-root --path="$WP_ROOT" || echo "⚠️  SCRIPT_DEBUGの設定に失敗しました"
+# wp-config.phpのデバッグ設定を毎回更新（環境変数から読み込んだ値を使用）
+# インストール済み・未インストールに関わらず実行
+if [ -f "$WP_ROOT/wp-config.php" ]; then
+    echo ""
+    echo "デバッグ設定を更新中..."
+    wp config set WP_DEBUG "$WP_DEBUG_VALUE" --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUGの設定に失敗しました"
+    wp config set WP_DEBUG_DISPLAY "$WP_DEBUG_VALUE" --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_DISPLAYの設定に失敗しました"
+    wp config set WP_DEBUG_LOG "$WP_DEBUG_VALUE" --raw --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOGの設定に失敗しました"
+    wp config set WP_DEBUG_LOG_FILE "/var/www/html/docker/log/debug.log" --allow-root --path="$WP_ROOT" || echo "⚠️  WP_DEBUG_LOG_FILEの設定に失敗しました"
 
-            # PHPエラーログをdocker/logディレクトリと標準出力の両方に出力するように設定
-            if ! grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
-                echo "" >> "$WP_ROOT/wp-config.php"
-                echo "/* 開発環境用: PHPエラーログをdocker/logディレクトリと標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
-                echo "if (WP_DEBUG) {" >> "$WP_ROOT/wp-config.php"
-                echo "    ini_set('log_errors', 1);" >> "$WP_ROOT/wp-config.php"
-                echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
-                echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
-                echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
-                echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
-                echo "    }" >> "$WP_ROOT/wp-config.php"
-                echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
-                echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
-                echo "    ini_set('display_startup_errors', 1);" >> "$WP_ROOT/wp-config.php"
-                echo "    error_reporting(E_ALL);" >> "$WP_ROOT/wp-config.php"
-                echo "}" >> "$WP_ROOT/wp-config.php"
-            fi
-            echo "✅ デバッグ設定を追加しました"
-        else
-            echo "✅ デバッグ設定は既に有効です"
-        fi
-
+    # PHPエラーログをdocker/logディレクトリと標準出力の両方に出力するように設定
+    # 既に存在する場合は削除してから追加（重複を防ぐ）
+    if grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
+        # 既存の設定ブロックを削除
+        sed -i '/\/\* 開発環境用: PHPエラーログ/,/^}$/d' "$WP_ROOT/wp-config.php"
     fi
+
+    # 設定ブロックを追加
+    echo "" >> "$WP_ROOT/wp-config.php"
+    echo "/* 開発環境用: PHPエラーログをdocker/logディレクトリと標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
+    echo "if (WP_DEBUG) {" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('log_errors', 1);" >> "$WP_ROOT/wp-config.php"
+    echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
+    echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
+    echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
+    echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
+    echo "    }" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('display_startup_errors', 1);" >> "$WP_ROOT/wp-config.php"
+    echo "    error_reporting(E_ALL);" >> "$WP_ROOT/wp-config.php"
+    echo "}" >> "$WP_ROOT/wp-config.php"
+
+    echo "✅ デバッグ設定を更新しました (WP_DEBUG=$WP_DEBUG_VALUE)"
 fi
 
 # WordPressがインストールされている場合、設定を実行
@@ -261,7 +233,7 @@ if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     # 標準プラグインのアクティベート
     # プラグインはComposerでインストール済みなので、アクティベートのみ実行
     # 注意: プラグインの日本語化はpost-setup.shで実行されます
-    /usr/docker/bin/setup-plugin.sh "$WP_ROOT"
+    /opt/docker/bin/setup-plugin.sh "$WP_ROOT"
 
     # テーマをアクティベート
     THEME_NAME="${THEME_NAME:-nyardpress}"

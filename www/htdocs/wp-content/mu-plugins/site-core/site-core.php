@@ -22,26 +22,8 @@ require_once __DIR__ . '/bootstrap/carbon-fields.php';
 // Mail: Mailpit設定（開発環境用）
 require_once __DIR__ . '/mail/mailpit.php';
 
-/**
- * ディレクトリ内のPHPファイルを読み込む（example-で始まるファイルは除外）
- *
- * @param string $dir ディレクトリパス
- */
-function load_php_files($dir) {
-    if (!is_dir($dir)) {
-        return;
-    }
-
-    $files = glob($dir . '/*.php');
-    foreach ($files as $file) {
-        // example-で始まるファイルは除外
-        $basename = basename($file);
-        if (strpos($basename, 'example-') === 0) {
-            continue;
-        }
-        require_once $file;
-    }
-}
+// ユーティリティ関数を読み込む
+require_once __DIR__ . '/utilities/load_php_files.php';
 
 // カスタム投稿タイプを読み込む
 load_php_files(__DIR__ . '/posttypes');

@@ -1,0 +1,27 @@
+# テーマ開発環境用 .gitignore
+
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+
+# ビルド成果物
+dist/
+build/
+assets/.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# 環境変数
+.env
+.env.local
+
+# エディタ設定
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+

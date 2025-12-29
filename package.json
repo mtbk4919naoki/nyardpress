@@ -3,15 +3,22 @@
   "version": "1.0.0",
   "description": "WordPress development environment",
   "scripts": {
-    "dev": "node env/dev.js",
-    "setup": "npm run dc:setup && npm run dc:build",
+    "setup": "run-s setup:env dc:install dc:build",
+    "rebuild": "run-s dc:destroy dc:install dc:build",
+    "start": "run-s dc:start",
+    "dump": "run-s dc:dump",
+    "restore": "run-s dc:restore:latest",
     "setup:env": "node env/setup-env.js",
-    "dc:setup": "node env/dc-setup.js",
+    "dc:install": "node env/dc-install.js",
     "dc:destroy": "node env/dc-destory.js",
     "dc:build": "node env/dc-build.js",
+    "dc:start": "docker compose up -d",
     "dc:dump": "node env/dc-dump.js",
-    "dc:restore": "node env/dc-restore.js"
+    "dc:restore": "node env/dc-restore.js",
+    "dc:restore:latest": "node env/dc-restore.js --latest"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "npm-run-all2": "^8.0.4"
+  }
 }
-

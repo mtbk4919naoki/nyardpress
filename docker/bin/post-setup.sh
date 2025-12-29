@@ -19,6 +19,52 @@ echo "=========================================="
 echo "⚙️  WordPress設定を適用中..."
 echo "=========================================="
 
+# デバッグ設定を環境変数の値で更新（毎回実行）
+echo "  デバッグ設定を更新中..."
+WP_DEBUG_VALUE="${WP_DEBUG:-true}"
+WP_DEBUG_DISPLAY_VALUE="${WP_DEBUG_DISPLAY:-true}"
+WP_DEBUG_LOG_VALUE="${WP_DEBUG_LOG:-true}"
+WP_DEBUG_LOG_FILE_VALUE="${WP_DEBUG_LOG_FILE:-$WP_ROOT/docker/log/debug.log}"
+
+# docker/logディレクトリを作成（存在しない場合）
+LOG_DIR="$WP_ROOT/docker/log"
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+    echo "✅ docker/logディレクトリを作成しました"
+fi
+
+if [ -f "$WP_ROOT/wp-config.php" ]; then
+    wp config set WP_DEBUG "$WP_DEBUG_VALUE" --raw --allow-root --path="$WP_ROOT" 2>&1 || echo "    ⚠️  WP_DEBUGの設定に失敗しました"
+    wp config set WP_DEBUG_DISPLAY "$WP_DEBUG_VALUE" --raw --allow-root --path="$WP_ROOT" 2>&1 || echo "    ⚠️  WP_DEBUG_DISPLAYの設定に失敗しました"
+    wp config set WP_DEBUG_LOG "$WP_DEBUG_VALUE" --raw --allow-root --path="$WP_ROOT" 2>&1 || echo "    ⚠️  WP_DEBUG_LOGの設定に失敗しました"
+    wp config set WP_DEBUG_LOG_FILE "$LOG_DIR/wp-debug.log" --allow-root --path="$WP_ROOT" 2>&1 || echo "    ⚠️  WP_DEBUG_LOG_FILEの設定に失敗しました"
+
+    # PHPエラーログをdocker/logディレクトリと標準出力の両方に出力するように設定
+    # 既に存在する場合は削除してから追加（重複を防ぐ）
+    if grep -q "ini_set('log_errors', 1)" "$WP_ROOT/wp-config.php"; then
+        # 既存の設定ブロックを削除
+        sed -i '/\/\* 開発環境用: PHPエラーログ/,/^}$/d' "$WP_ROOT/wp-config.php" 2>/dev/null || true
+    fi
+
+    # 設定ブロックを追加
+    echo "" >> "$WP_ROOT/wp-config.php"
+    echo "/* 開発環境用: PHPエラーログをdocker/logディレクトリと標準出力にも出力 */" >> "$WP_ROOT/wp-config.php"
+    echo "if (WP_DEBUG) {" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('log_errors', 1);" >> "$WP_ROOT/wp-config.php"
+    echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
+    echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
+    echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
+    echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
+    echo "    }" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
+    echo "    ini_set('display_startup_errors', 1);" >> "$WP_ROOT/wp-config.php"
+    echo "    error_reporting(E_ALL);" >> "$WP_ROOT/wp-config.php"
+    echo "}" >> "$WP_ROOT/wp-config.php"
+
+    echo "  ✅ デバッグ設定を更新しました (WP_DEBUG=$WP_DEBUG_VALUE)"
+fi
+
 # パーマリンク構造を設定（毎回実行）
 echo "  パーマリンク構造を設定中..."
 wp rewrite structure '/%postname%/' --allow-root --path="$WP_ROOT" 2>&1 || echo "    ⚠️  パーマリンク構造の設定に失敗しました"

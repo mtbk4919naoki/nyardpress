@@ -22,11 +22,11 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 RUN composer global config repositories.wpackagist composer https://wpackagist.org || true
 
 # binディレクトリ内のすべてのスクリプトをコピー
-COPY docker/bin/ /usr/docker/bin/
-RUN chmod +x /usr/docker/bin/*
+COPY docker/bin/ /opt/docker/bin/
+RUN chmod +x /opt/docker/bin/*
 
 # PATHを設定
-ENV PATH=$PATH:/usr/docker/bin
+ENV PATH=$PATH:/opt/docker/bin
 
 # 開発環境用: PHPエラーログを標準出力にも出力するように設定
 # php.iniの設定を変更（開発環境用）
@@ -44,5 +44,5 @@ RUN echo "upload_max_filesize = 1024M" >> /usr/local/etc/php/conf.d/docker-php-u
     echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/docker-php-upload.ini
 
 # カスタムエントリーポイントを設定
-ENTRYPOINT ["/usr/docker/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/opt/docker/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

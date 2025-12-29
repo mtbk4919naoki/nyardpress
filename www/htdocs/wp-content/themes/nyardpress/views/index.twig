@@ -36,7 +36,7 @@
                     <footer class="entry-footer">
                         {% if post.terms('category') %}
                             <span class="cat-links">
-                                カテゴリー: 
+                                カテゴリー:
                                 {% for term in post.terms('category') %}
                                     <a href="{{ term.link }}">{{ term.name }}</a>{% if not loop.last %}, {% endif %}
                                 {% endfor %}

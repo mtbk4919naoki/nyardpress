@@ -11,7 +11,7 @@ DUMP_DIR="/var/www/html/docker/dump"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # コマンドライン引数からダンプ名のサフィックスを取得（オプション）
-DUMP_SUFFIX="$1"
+DUMP_SUFFIX="${1:-}"
 if [ -n "$DUMP_SUFFIX" ]; then
     # 引数がある場合は、タイムスタンプと引数を組み合わせる
     DUMP_NAME="wordpress_dump_${TIMESTAMP}_${DUMP_SUFFIX}"
