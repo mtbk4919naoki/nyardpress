@@ -12,11 +12,6 @@ if (!defined('ABSPATH')) {
  * @param mixed $default デフォルト値
  * @return array Vite設定の配列
  */
-function get_config($key, $default = null) {
-    if(function_exists('getenv')) {
-        $value = getenv($key) ? getenv($key) : null;
-    } else {
-        $value = defined($key) ? constant($key) : null;
-    }
-    return $value ?? $default;
+function example_helper() {
+    return 'example_helper';
 }

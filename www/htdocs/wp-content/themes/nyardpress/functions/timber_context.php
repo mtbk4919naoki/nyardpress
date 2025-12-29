@@ -27,7 +27,7 @@ add_filter('timber/context', function($context) {
     }
 
     // メニューを追加（メニューが存在する場合のみ）
-    $menu = Timber\Timber::get_menu('primary');
+    $menu = Timber\Timber::get_menu('header');
     if ($menu) {
         $context['menu'] = $menu;
     }

@@ -7,6 +7,8 @@ if (!defined('ABSPATH')) {
 
 /**
  * トランジェント(キャッシュ)を使用するためのユーティリティ
+ * TTLが0のときはキャッシュを無視してコールバックを実行
+ * TTLがマイナスの時はキャッシュを構成更新してTTLを絶対値にして設定する
  *
  * テーマ側からも使用可能です。
  * 例: use_transient('my_cache_key', function() { return 'cached value'; }, 3600);
@@ -17,23 +19,24 @@ if (!defined('ABSPATH')) {
  * @return mixed キャッシュされた値
  */
 if (!function_exists('use_transient')) {
-    function use_transient($key, $callback, $ttl = 0)
+    function use_transient($key, $callback, $ttl = 86400)
     {
-        // ログインしているユーザーはキャッシュを無視してコールバックを実行
-        if (is_user_logged_in()) {
+        // ログインユーザーまたはTTLが0の場合はキャッシュを無視してコールバックを実行
+        if (is_user_logged_in() || $ttl = 0) {
             return $callback();
+        } else {
+            $retrieved = get_transient($key);
+            if ($retrieved !== false) {
+                return $retrieved;
+            }
         }
 
-        // キャッシュが存在する場合はキャッシュを返す
-        $value = get_transient($key);
-        if ($value) {
-            return $value;
-        }
-
-        // キャッシュが存在しない場合はコールバックを実行してキャッシュを作成
-        $value = $callback();
-        $ttl_with_jitter = $ttl + rand(0, min($ttl * 0.2, 7200));
-        set_transient($key, $value, $ttl_with_jitter);
-        return $value;
+        // コールバックを実行してキャッシュを作成
+        // TTLが0以下の場合は絶対値に変換
+        $computed = $callback();
+        $ttl_absolute = abs($ttl);
+        $ttl_with_jitter = $ttl_absolute + rand(0, min($ttl_absolute * 0.2, 7200));
+        set_transient($key, $computed, $ttl_with_jitter);
+        return $computed;
     }
 }

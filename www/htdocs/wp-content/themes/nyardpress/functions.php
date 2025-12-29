@@ -19,14 +19,14 @@ if(class_exists('Dotenv\Dotenv')) {
 load_php_files(__DIR__ . '/functions/helpers');
 
 // 上から実行順で整理する
-foreach ([
+$function_files = [
     'bootstrap',
+    'plugin',
     'setup_theme',
     // 'setup_carbon_fields', // mu-plugins/site-coreで管理
     // 'register_post_types', // mu-plugins/site-coreで管理
     // 'register_taxonomies', // mu-plugins/site-coreで管理
     'menus_widgets',
-    'plugin',
     'rest_api',
     'query_main',
     'template_routing',
@@ -37,6 +37,8 @@ foreach ([
     'render_filters',
     'save_post',
     'admin_ui',
-] as $file) {
+];
+
+foreach ($function_files as $file) {
     require_once __DIR__ . "/functions/{$file}.php";
 }

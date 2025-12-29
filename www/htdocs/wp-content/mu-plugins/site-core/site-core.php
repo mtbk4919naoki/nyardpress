@@ -25,6 +25,9 @@ require_once __DIR__ . '/mail/mailpit.php';
 // ユーティリティ関数を読み込む
 require_once __DIR__ . '/utilities/load_php_files.php';
 
+// ユーティリティ関数を読み込む
+load_php_files(__DIR__ . '/utilities');
+
 // カスタム投稿タイプを読み込む
 load_php_files(__DIR__ . '/posttypes');
 
@@ -33,7 +36,4 @@ load_php_files(__DIR__ . '/taxonomies');
 
 // カスタムフィールドを読み込む
 load_php_files(__DIR__ . '/fields');
-
-// ユーティリティ関数を読み込む
-load_php_files(__DIR__ . '/utilities');
 
