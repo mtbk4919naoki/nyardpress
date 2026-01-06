@@ -28,9 +28,28 @@ if (!function_exists('use_user_meta')) {
     }
 
     // ユーザーメタデータ更新時にキャッシュを削除
+    // WordPress標準のメタデータ更新フック（Carbon Fieldsは通常このフックで動作）
     add_action('updated_user_metadata', function ($meta_id, $object_id, $meta_key, $meta_value) {
         delete_transient('user_meta_' . $object_id . '_' . $meta_key);
     }, 10, 4);
+
+    // ACFのユーザーメタデータ更新時にキャッシュを削除
+    // ACFは独自の保存メカニズムを使用するため、acf/update_valueフックが必要
+    if (function_exists('get_field')) {
+        add_filter('acf/update_value', function ($value, $post_id, $field) {
+            // ユーザーの場合のみキャッシュを削除（$post_idが'user_user_id'形式）
+            if (is_string($post_id) && strpos($post_id, 'user_') === 0) {
+                $user_id = (int)str_replace('user_', '', $post_id);
+                if ($user_id > 0) {
+                    $field_name = is_array($field) ? (isset($field['name']) ? $field['name'] : '') : $field;
+                    if ($field_name) {
+                        delete_transient('user_meta_' . $user_id . '_' . $field_name);
+                    }
+                }
+            }
+            return $value;
+        }, 10, 3);
+    }
 
     // ユーザーメタデータ削除時にキャッシュを削除
     add_action('delete_user_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {

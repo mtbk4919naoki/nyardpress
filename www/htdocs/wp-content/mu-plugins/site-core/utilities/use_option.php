@@ -27,9 +27,25 @@ if (!function_exists('use_option')) {
     }
 
     // オプション更新時にキャッシュを削除
+    // WordPress標準のオプション更新フック（Carbon Fieldsは通常このフックで動作）
     add_action('updated_option', function ($option_name, $old_value, $value) {
         delete_transient('option_' . $option_name);
     }, 10, 3);
+
+    // ACFのオプションフィールド更新時にキャッシュを削除
+    // ACFは独自の保存メカニズムを使用するため、acf/update_valueフックが必要
+    if (function_exists('get_field')) {
+        add_filter('acf/update_value', function ($value, $post_id, $field) {
+            // オプションページの場合のみキャッシュを削除
+            if ($post_id === 'option' || strpos($post_id, 'options') === 0) {
+                $field_name = is_array($field) ? (isset($field['name']) ? $field['name'] : '') : $field;
+                if ($field_name) {
+                    delete_transient('option_' . $field_name);
+                }
+            }
+            return $value;
+        }, 10, 3);
+    }
 
     // オプション削除時にキャッシュを削除
     add_action('delete_option', function ($option_name) {

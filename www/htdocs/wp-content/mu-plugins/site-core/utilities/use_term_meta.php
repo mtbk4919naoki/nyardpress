@@ -31,9 +31,30 @@ if (!function_exists('use_term_meta')) {
     }
 
     // タームメタデータ更新時にキャッシュを削除
+    // WordPress標準のメタデータ更新フック（Carbon Fieldsは通常このフックで動作）
     add_action('updated_term_metadata', function ($meta_id, $object_id, $meta_key, $meta_value) {
         delete_transient('term_meta_' . $object_id . '_' . $meta_key);
     }, 10, 4);
+
+    // ACFのタームメタデータ更新時にキャッシュを削除
+    // ACFは独自の保存メカニズムを使用するため、acf/update_valueフックが必要
+    if (function_exists('get_field')) {
+        add_filter('acf/update_value', function ($value, $post_id, $field) {
+            // タームの場合のみキャッシュを削除（$post_idが'taxonomy_term_id'形式）
+            if (is_string($post_id) && preg_match('/^([a-z_]+)_(\d+)$/', $post_id, $matches)) {
+                $taxonomy = $matches[1];
+                $term_id = (int)$matches[2];
+                // タクソノミー名が存在する場合のみ処理
+                if (taxonomy_exists($taxonomy)) {
+                    $field_name = is_array($field) ? (isset($field['name']) ? $field['name'] : '') : $field;
+                    if ($field_name) {
+                        delete_transient('term_meta_' . $term_id . '_' . $field_name);
+                    }
+                }
+            }
+            return $value;
+        }, 10, 3);
+    }
 
     // タームメタデータ削除時にキャッシュを削除
     add_action('delete_term_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {

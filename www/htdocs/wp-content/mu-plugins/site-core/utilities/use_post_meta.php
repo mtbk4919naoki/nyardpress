@@ -28,10 +28,25 @@ if (!function_exists('use_post_meta')) {
     }
 
     // メタデータ更新時にキャッシュを削除
-    // updated_post_meta は4つのパラメータ（$meta_id, $object_id, $meta_key, $meta_value）を取る
+    // WordPress標準のメタデータ更新フック（Carbon Fieldsは通常このフックで動作）
     add_action('updated_post_meta', function ($meta_id, $object_id, $meta_key, $meta_value) {
         delete_transient('post_meta_' . $object_id . '_' . $meta_key);
     }, 10, 4);
+
+    // ACFの投稿メタデータ更新時にキャッシュを削除
+    // ACFは独自の保存メカニズムを使用するため、acf/update_valueフックが必要
+    if (function_exists('get_field')) {
+        add_filter('acf/update_value', function ($value, $post_id, $field) {
+            // 投稿の場合のみキャッシュを削除（オプションページやターム、ユーザーは除外）
+            if (is_numeric($post_id) && get_post_type($post_id) !== false) {
+                $field_name = is_array($field) ? (isset($field['name']) ? $field['name'] : '') : $field;
+                if ($field_name) {
+                    delete_transient('post_meta_' . $post_id . '_' . $field_name);
+                }
+            }
+            return $value;
+        }, 10, 3);
+    }
 
     // メタデータ削除時にキャッシュを削除
     add_action('delete_post_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
