@@ -22,7 +22,7 @@ if (!function_exists('use_transient')) {
     function use_transient($key, $callback, $ttl = 86400)
     {
         // ログインユーザーまたはTTLが0の場合はキャッシュを無視してコールバックを実行
-        if (is_user_logged_in() || $ttl = 0) {
+        if (is_user_logged_in() || $ttl == 0) {
             return $callback();
         } else {
             $retrieved = get_transient($key);
