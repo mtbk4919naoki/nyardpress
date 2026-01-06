@@ -6,9 +6,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * transientAPIを介してCarbon Fieldsのオプションデータを取得する
- * ACF/SCFのオプションデータも取得可能
- * 更新時のキャッシュの削除は別途行うこと
+ * transientAPIを介してCarbon Fields/ACF/SCFのオプションデータを取得する
  *
  * @param string $key メタデータのキー
  * @param int $ttl キャッシュの有効期限(秒)
@@ -17,13 +15,24 @@ if (!defined('ABSPATH')) {
 if (!function_exists('use_option')) {
     function use_option($key, $ttl = 86400 * 7) { // 7日
         return use_transient('option_' . $key, function() use ($key) {
+            $option = null;
             if (function_exists('carbon_get_theme_option')) {
-                return carbon_get_theme_option($key) ?? get_option($key);
-            } elseif (function_exists('get_field')) {
-                return get_field($key, 'option') ?? get_option($key);
-            } else {
-                return get_option($key);
+                $option = carbon_get_theme_option($key);
             }
+            if (function_exists('get_field') && !isset($option)) {
+                $option = get_field($key, 'option');
+            }
+            return $option ?? get_option($key);
         }, $ttl);
     }
 }
+
+// オプション更新時にキャッシュを削除
+add_action('updated_option', function ($option_name, $old_value, $value) {
+	delete_transient('option_' . $option_name);
+}, 10, 3);
+
+// オプション削除時にキャッシュを削除
+add_action('delete_option', function ($option_name) {
+	delete_transient('option_' . $option_name);
+}, 10, 1);
