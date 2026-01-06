@@ -24,22 +24,22 @@ if (!function_exists('use_menu_meta')) {
             return $meta ?? get_post_meta($menu_id, $key, true);
         }, $ttl);
     }
+
+    // メニューメタデータ更新時にキャッシュを削除
+    // メニューアイテムのメタデータはpost_metaとして保存されるため、updated_post_metaフックを使用
+    add_action('updated_post_meta', function ($meta_id, $object_id, $meta_key, $meta_value) {
+        // メニューアイテムかどうかをチェック
+        if (get_post_type($object_id) === 'nav_menu_item') {
+            delete_transient('menu_meta_' . $object_id . '_' . $meta_key);
+        }
+    }, 10, 4);
+
+    // メニューメタデータ削除時にキャッシュを削除
+    // メニューアイテムのメタデータはpost_metaとして保存されるため、delete_post_metaフックを使用
+    add_action('delete_post_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
+        // メニューアイテムかどうかをチェック
+        if (get_post_type($object_id) === 'nav_menu_item') {
+            delete_transient('menu_meta_' . $object_id . '_' . $meta_key);
+        }
+    }, 10, 4);
 }
-
-// メニューメタデータ更新時にキャッシュを削除
-// メニューアイテムのメタデータはpost_metaとして保存されるため、updated_post_metaフックを使用
-add_action('updated_post_meta', function ($meta_id, $object_id, $meta_key, $meta_value) {
-	// メニューアイテムかどうかをチェック
-	if (get_post_type($object_id) === 'nav_menu_item') {
-		delete_transient('menu_meta_' . $object_id . '_' . $meta_key);
-	}
-}, 10, 4);
-
-// メニューメタデータ削除時にキャッシュを削除
-// メニューアイテムのメタデータはpost_metaとして保存されるため、delete_post_metaフックを使用
-add_action('delete_post_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
-	// メニューアイテムかどうかをチェック
-	if (get_post_type($object_id) === 'nav_menu_item') {
-		delete_transient('menu_meta_' . $object_id . '_' . $meta_key);
-	}
-}, 10, 4);

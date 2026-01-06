@@ -26,14 +26,14 @@ if (!function_exists('use_user_meta')) {
             return $meta ?? get_user_meta($user_id, $key);
         }, $ttl);
     }
+
+    // ユーザーメタデータ更新時にキャッシュを削除
+    add_action('updated_user_metadata', function ($meta_id, $object_id, $meta_key, $meta_value) {
+        delete_transient('user_meta_' . $object_id . '_' . $meta_key);
+    }, 10, 4);
+
+    // ユーザーメタデータ削除時にキャッシュを削除
+    add_action('delete_user_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
+        delete_transient('user_meta_' . $object_id . '_' . $meta_key);
+    }, 10, 4);
 }
-
-// ユーザーメタデータ更新時にキャッシュを削除
-add_action('updated_user_metadata', function ($meta_id, $object_id, $meta_key, $meta_value) {
-	delete_transient('user_meta_' . $object_id . '_' . $meta_key);
-}, 10, 4);
-
-// ユーザーメタデータ削除時にキャッシュを削除
-add_action('delete_user_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
-	delete_transient('user_meta_' . $object_id . '_' . $meta_key);
-}, 10, 4);

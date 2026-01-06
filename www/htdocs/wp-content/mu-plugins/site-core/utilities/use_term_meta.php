@@ -29,14 +29,14 @@ if (!function_exists('use_term_meta')) {
             return $meta ?? get_term_meta($term_id, $key);
         }, $ttl);
     }
+
+    // タームメタデータ更新時にキャッシュを削除
+    add_action('updated_term_metadata', function ($meta_id, $object_id, $meta_key, $meta_value) {
+        delete_transient('term_meta_' . $object_id . '_' . $meta_key);
+    }, 10, 4);
+
+    // タームメタデータ削除時にキャッシュを削除
+    add_action('delete_term_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
+        delete_transient('term_meta_' . $object_id . '_' . $meta_key);
+    }, 10, 4);
 }
-
-// タームメタデータ更新時にキャッシュを削除
-add_action('updated_term_metadata', function ($meta_id, $object_id, $meta_key, $meta_value) {
-	delete_transient('term_meta_' . $object_id . '_' . $meta_key);
-}, 10, 4);
-
-// タームメタデータ削除時にキャッシュを削除
-add_action('delete_term_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
-	delete_transient('term_meta_' . $object_id . '_' . $meta_key);
-}, 10, 4);

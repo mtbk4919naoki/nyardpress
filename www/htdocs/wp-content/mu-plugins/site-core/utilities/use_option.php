@@ -25,14 +25,14 @@ if (!function_exists('use_option')) {
             return $option ?? get_option($key);
         }, $ttl);
     }
+
+    // オプション更新時にキャッシュを削除
+    add_action('updated_option', function ($option_name, $old_value, $value) {
+        delete_transient('option_' . $option_name);
+    }, 10, 3);
+
+    // オプション削除時にキャッシュを削除
+    add_action('delete_option', function ($option_name) {
+        delete_transient('option_' . $option_name);
+    }, 10, 1);
 }
-
-// オプション更新時にキャッシュを削除
-add_action('updated_option', function ($option_name, $old_value, $value) {
-	delete_transient('option_' . $option_name);
-}, 10, 3);
-
-// オプション削除時にキャッシュを削除
-add_action('delete_option', function ($option_name) {
-	delete_transient('option_' . $option_name);
-}, 10, 1);

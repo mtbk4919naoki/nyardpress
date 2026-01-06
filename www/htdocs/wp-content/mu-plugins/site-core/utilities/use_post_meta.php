@@ -26,15 +26,15 @@ if (!function_exists('use_post_meta')) {
             return $meta ?? get_post_meta($post_id, $key, true);
         }, $ttl);
     }
+
+    // メタデータ更新時にキャッシュを削除
+    // updated_post_meta は4つのパラメータ（$meta_id, $object_id, $meta_key, $meta_value）を取る
+    add_action('updated_post_meta', function ($meta_id, $object_id, $meta_key, $meta_value) {
+        delete_transient('post_meta_' . $object_id . '_' . $meta_key);
+    }, 10, 4);
+
+    // メタデータ削除時にキャッシュを削除
+    add_action('delete_post_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
+        delete_transient('post_meta_' . $object_id . '_' . $meta_key);
+    }, 10, 4);
 }
-
-// メタデータ更新時にキャッシュを削除
-// updated_post_meta は4つのパラメータ（$meta_id, $object_id, $meta_key, $meta_value）を取る
-add_action('updated_post_meta', function ($meta_id, $object_id, $meta_key, $meta_value) {
-	delete_transient('post_meta_' . $object_id . '_' . $meta_key);
-}, 10, 4);
-
-// メタデータ削除時にキャッシュを削除
-add_action('delete_post_meta', function ($meta_ids, $object_id, $meta_key, $meta_value) {
-	delete_transient('post_meta_' . $object_id . '_' . $meta_key);
-}, 10, 4);
