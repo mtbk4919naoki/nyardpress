@@ -10,20 +10,30 @@ if (!defined('ABSPATH')) {
  *
  * @param string $dir ディレクトリパス
  */
-function load_php_files($dir, $exclude_prefixes = ['example-']) {
-    if (!is_dir($dir)) {
-        return;
-    }
+if (!function_exists('load_php_files')) {
+    function load_php_files($dir, $exclude_prefixes = ['example-']) {
+        if (!is_dir($dir)) {
+            return;
+        }
 
-    $files = glob($dir . '/*.php');
-    foreach ($files as $file) {
-        // 除外するファイルのプレフィックスをチェック
-        $basename = basename($file);
-        foreach ($exclude_prefixes as $prefix) {
-            if (strpos($basename, $prefix) === 0) {
+        $files = glob($dir . '/*.php');
+        foreach ($files as $file) {
+            // 除外するファイルのプレフィックスをチェック
+            $basename = basename($file);
+            $should_exclude = false;
+
+            foreach ($exclude_prefixes as $prefix) {
+                if (strpos($basename, $prefix) === 0) {
+                    $should_exclude = true;
+                    break;
+                }
+            }
+
+            if ($should_exclude) {
                 continue;
             }
+
+            require_once $file;
         }
-        require_once $file;
     }
 }

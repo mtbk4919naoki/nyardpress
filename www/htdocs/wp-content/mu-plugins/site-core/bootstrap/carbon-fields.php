@@ -8,9 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Carbon Fieldsが利用可能な場合のみ初期化
-if (class_exists('Carbon_Fields\\Carbon_Fields')) {
+add_action('after_setup_theme', function () {
     \Carbon_Fields\Carbon_Fields::boot();
-}
-
+}, 0);
 

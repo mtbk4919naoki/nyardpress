@@ -14,14 +14,16 @@ if (!defined('ABSPATH')) {
  * @param int $ttl キャッシュの有効期限(秒)
  * @return array メタデータの配列
  */
-function use_option($key, $ttl = 86400 * 7) { // 7日
-    return use_transient('option_' . $key, function() use ($key) {
-        if (function_exists('carbon_get_theme_option')) {
-            return carbon_get_theme_option($key) ?? get_option($key);
-        } elseif (function_exists('get_field')) {
-            return get_field($key, 'option') ?? get_option($key);
-        } else {
-            return get_option($key);
-        }
-    }, $ttl);
+if (!function_exists('use_option')) {
+    function use_option($key, $ttl = 86400 * 7) { // 7日
+        return use_transient('option_' . $key, function() use ($key) {
+            if (function_exists('carbon_get_theme_option')) {
+                return carbon_get_theme_option($key) ?? get_option($key);
+            } elseif (function_exists('get_field')) {
+                return get_field($key, 'option') ?? get_option($key);
+            } else {
+                return get_option($key);
+            }
+        }, $ttl);
+    }
 }

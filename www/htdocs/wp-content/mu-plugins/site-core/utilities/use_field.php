@@ -14,12 +14,14 @@ if (!defined('ABSPATH')) {
  * @param int $ttl キャッシュの有効期限(秒)
  * @return array メタデータの配列
  */
-function use_field($post_id, $key, $ttl = 86400) {
-    return use_transient('field_' . $post_id . '_' . $key, function() use ($post_id, $key) {
-        if (function_exists('get_field')) {
-            return get_field($key, $post_id);
-        } else {
-            return get_post_meta($post_id, $key);
-        }
-    }, $ttl);
+if (!function_exists('use_field')) {
+    function use_field($post_id, $key, $ttl = 86400) {
+        return use_transient('field_' . $post_id . '_' . $key, function() use ($post_id, $key) {
+            if (function_exists('get_field')) {
+                return get_field($key, $post_id);
+            } else {
+                return get_post_meta($post_id, $key);
+            }
+        }, $ttl);
+    }
 }
