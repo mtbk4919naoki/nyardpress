@@ -20,24 +20,73 @@ Dockerを使用したWordPress開発環境で、Timber（Twig）、Carbon Fields
 - Node.js（npm scriptsを使用する場合）
 - Git
 
-## セットアップ
+## 開発環境立ち上げ
 
-### 1. 初回セットアップ
+まだ、初回セットアップを行っていない場合は、次章のセットアップを行なってください。
+
+### 1. コンテナの起動
 
 ```bash
-# 環境変数ファイルの作成と設定
-npm run setup:env
+# バックグラウンドモードでコンテナを起動
+npm run start
 ```
 
-対話形式で以下の設定を行います：
-- WordPressポート番号（デフォルト: 8080）
-- MySQLポート番号（デフォルト: 3306）
-- SMTPポート番号（デフォルト: 1025）
-- Mailpitポート番号（デフォルト: 8025）
+### 2. テーマ開発環境の立ち上げ
+
+```bash
+# テーマディレクトリに移動（プロジェクトによる）
+cd www/htdocs/wp-content/themes/nyardpress
+
+npm run dev
+```
+
+### 3. MUプラグイン開発環境の立ち上げ
+
+こちらはカスタム投稿タイプやカスタムブロック、カスタムフィールドの開発に用います。
+
+```bash
+# テーマディレクトリに移動（プロジェクトによる）
+cd www/htdocs/wp-content/mu-plugins/site-core
+
+npm run dev
+```
+
+## 3. 各画面へアクセス（.envやプロジェクトの設定による）
+
+- [フロント: http://loclalhost:8080](http://localhost:8080)
+- [管理画面: http://localhost:8080/wp-admin/](http://localhost:8080/wp-admin/)
+- [メール: http://localhost:8025](http://localhost:8025)
+- [DB: mysql://wordpress:wordpress@localhost:3306/wordpress](mysql://wordpress:wordpress@localhost:3306/wordpress)
+
+**デフォルトWordPressユーザー**  
+```
+User: nyardpress  
+Pass: supercat
+```
+
+**CLIでDBへアクセスする**
+```bash
+# dockerコンテナから
+docker exec -it nyardpress_db mysql -u wordpress -pwordpress wordpress
+
+# TCP/IPから
+mysql -h localhost -P 3306 -u wordpress -pwordpress --protocol=TCP wordpress
+```
+
+**MySQLクライアントでDBへアクセスする**
+```
+protocol: TCP/IP
+host: localhost
+username: wordpress
+password: wordpress
+database: wordpress
+```
+
+## セットアップ
+
+### 1. 環境変数の設定とDockerコンテナの起動
 
 テーマ名は`nyardpress.config.json`から自動的に読み込まれます。
-
-### 2. セットアップとDockerコンテナの起動
 
 ```bash
 # 環境変数設定、Composer依存関係のインストール、Dockerコンテナのビルドと起動（推奨）
@@ -46,6 +95,11 @@ npm run setup
 
 このコマンドで以下が順番に実行されます：
 1. **環境変数ファイルの作成**（`npm run setup:env`）
+  - 対話形式で以下の設定を行います：
+  - WordPressポート番号（デフォルト: 8080）
+  - MySQLポート番号（デフォルト: 3306）
+  - SMTPポート番号（デフォルト: 1025）
+  - Mailpitポート番号（デフォルト: 8025）
 2. **Composer依存関係のインストール**（`npm run dc:install`）
    - プラグイン（`www/htdocs/wp-content/plugins/composer.json`）
    - テーマ（`www/htdocs/wp-content/themes/{THEME_NAME}/composer.json`）
@@ -57,6 +111,7 @@ npm run setup
      - 日本語言語パックのインストール
      - 標準プラグインのアクティベート
      - テーマのアクティベート
+4. **無事ビルドできたことを確認したら一旦終了**（`ctrl + c`）
 
 **個別に実行する場合：**
 
@@ -69,9 +124,11 @@ npm run dc:install
 
 # Dockerコンテナのビルドと起動
 npm run dc:build
+
+# 無事ビルドできたら、ctrl + c で一旦終了
 ```
 
-### 3. データベースの復元（途中から参加したメンバー向け）
+### 2. データベースの復元（途中から参加したメンバー向け）
 
 既存のダンプファイルがある場合は、データベースとメディアファイルを復元します：
 
@@ -88,7 +145,7 @@ npm run restore
 
 **注意：** ダンプファイルがない場合は、この手順をスキップして次に進んでください。
 
-### 4. アクセス
+### 3. アクセス
 
 - **WordPress**: `http://localhost:8080`（デフォルト、`.env`で変更可能）
 - **Mailpit Web UI**: `http://localhost:8025`（メールテスト用）
@@ -104,7 +161,7 @@ nyardpress/
 │   └── bin/                  # カスタムスクリプト
 │       ├── docker-entrypoint.sh
 │       └── setup.sh          # WordPress初期セットアップ
-├── env/                      # 環境設定スクリプト
+├── scripts/                      # 環境設定スクリプト
 │   ├── setup-env.js         # 環境変数セットアップ
 │   ├── config.js            # 設定ファイル読み込み
 │   ├── dc-install.js        # Composer依存関係インストール

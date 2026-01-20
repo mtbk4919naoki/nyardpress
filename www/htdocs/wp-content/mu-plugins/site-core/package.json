@@ -1,0 +1,21 @@
+{
+  "name": "site-core",
+  "version": "1.0.0",
+  "description": "Site Core MU Plugin",
+  "author": "Nyardpress",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "build": "npm run build:blocks",
+    "build:blocks": "node scripts/build-blocks.js",
+    "build:block": "wp-scripts build",
+    "start": "npm run start:blocks",
+    "start:blocks": "node scripts/start-blocks.js",
+    "start:block": "wp-scripts start",
+    "create-block": "node scripts/create-block.js",
+    "packages-update": "wp-scripts packages-update"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^26.0.0"
+  }
+}
+

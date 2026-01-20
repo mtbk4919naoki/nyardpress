@@ -7,12 +7,12 @@ if (!defined('ABSPATH')) {
 
 /**
  * Twig環境を取得または作成
- * 
+ *
  * @param string $template_dir テンプレートディレクトリのパス
  * @return \Twig\Environment|null
  */
-if (!function_exists('nya_get_twig')) {
-    function nya_get_twig($template_dir = null) {
+if (!function_exists('nya_twig')) {
+    function nya_twig($template_dir = null) {
         static $twig_instances = array();
 
         // テンプレートディレクトリが指定されていない場合はnullを返す
@@ -38,7 +38,7 @@ if (!function_exists('nya_get_twig')) {
         try {
             // Twigローダーを作成
             $loader = new \Twig\Loader\FilesystemLoader($template_dir);
-            
+
             // Twig環境を作成（開発モードの場合はデバッグを有効化）
             $twig = new \Twig\Environment($loader, array(
                 'cache' => false, // 開発環境ではキャッシュを無効化

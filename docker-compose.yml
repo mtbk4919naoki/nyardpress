@@ -22,7 +22,7 @@ services:
       # ボリューム名: 固定値（データベースのデータを永続化）
       - nyardpress_db_data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     networks:
       # ネットワーク名: 固定値
       - nyardpress-network

@@ -22,18 +22,27 @@ require_once __DIR__ . '/bootstrap/carbon-fields.php';
 // Mail: Mailpit設定（開発環境用）
 require_once __DIR__ . '/mail/mailpit.php';
 
-// ユーティリティ関数を読み込む
+// ユーティリティ関数を読み込む（優先読み込み）
 require_once __DIR__ . '/utilities/load_php_files.php';
+require_once __DIR__ . '/utilities/use_transient.php';
 
 // ユーティリティ関数を読み込む
 load_php_files(__DIR__ . '/utilities');
 
-// カスタム投稿タイプを読み込む
-load_php_files(__DIR__ . '/posttypes');
+// ブロック管理
+// require_once __DIR__ . '/blocks/blocks.php';
 
-// カスタムタクソノミーを読み込む
-load_php_files(__DIR__ . '/taxonomies');
+add_action('carbon_fields_register_fields', function () {
+    // カスタム投稿タイプを読み込む
+    load_php_files(__DIR__ . '/posttypes');
 
-// カスタムフィールドを読み込む
-load_php_files(__DIR__ . '/fields');
+    // カスタムタクソノミーを読み込む
+    load_php_files(__DIR__ . '/taxonomies');
+
+    // カスタムフィールドを読み込む
+    load_php_files(__DIR__ . '/fields');
+
+    // Gutenbergブロックを読み込む
+    load_php_files(__DIR__ . '/blocks');
+});
 

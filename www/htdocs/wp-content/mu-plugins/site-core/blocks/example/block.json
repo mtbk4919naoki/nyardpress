@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "nya/example",
+  "title": "Example",
+  "category": "text",
+  "icon": "editor-paragraph",
+  "description": "A example block",
+  "attributes": {
+    "content": {
+      "type": "string",
+      "default": ""
+    },
+    "number": {
+      "type": "number",
+      "default": 0
+    },
+    "imageId": {
+      "type": "number",
+      "default": 0
+    },
+    "imageUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "imageAlt": {
+      "type": "string",
+      "default": ""
+    },
+    "url": {
+      "type": "string",
+      "default": ""
+    },
+    "urlText": {
+      "type": "string",
+      "default": ""
+    },
+    "repeat": {
+      "type": "array",
+      "default": []
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "editorScript": "file:./build/index.js",
+  "render": "file:./render.php"
+}

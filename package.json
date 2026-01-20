@@ -8,14 +8,14 @@
     "start": "run-s dc:start",
     "dump": "run-s dc:dump",
     "restore": "run-s dc:restore:latest",
-    "setup:env": "node env/setup-env.js",
-    "dc:install": "node env/dc-install.js",
-    "dc:destroy": "node env/dc-destory.js",
-    "dc:build": "node env/dc-build.js",
+    "setup:env": "node scripts/setup-env.js",
+    "dc:install": "node scripts/dc-install.js",
+    "dc:destroy": "node scripts/dc-destory.js",
+    "dc:build": "node scripts/dc-build.js",
     "dc:start": "docker compose up -d",
-    "dc:dump": "node env/dc-dump.js",
-    "dc:restore": "node env/dc-restore.js",
-    "dc:restore:latest": "node env/dc-restore.js --latest"
+    "dc:dump": "node scripts/dc-dump.js",
+    "dc:restore": "node scripts/dc-restore.js",
+    "dc:restore:latest": "node scripts/dc-restore.js --latest"
   },
   "private": true,
   "devDependencies": {

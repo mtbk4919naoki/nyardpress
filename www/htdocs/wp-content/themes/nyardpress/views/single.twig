@@ -23,22 +23,25 @@
         {% endif %}
 
         <div class="entry-content">
-            {{ post.content }}
+            <p>出て欲しいなぁ</p>
+            {{ post.content|raw }}
+            {{ content|raw }}
+            <p>出ないなぁ</p>
         </div>
 
         <footer class="entry-footer">
             {% if post.terms('category') %}
                 <span class="cat-links">
-                    カテゴリー: 
+                    カテゴリー:
                     {% for term in post.terms('category') %}
                         <a href="{{ term.link }}">{{ term.name }}</a>{% if not loop.last %}, {% endif %}
                     {% endfor %}
                 </span>
             {% endif %}
-            
+
             {% if post.terms('post_tag') %}
                 <span class="tags-links">
-                    タグ: 
+                    タグ:
                     {% for term in post.terms('post_tag') %}
                         <a href="{{ term.link }}">{{ term.name }}</a>{% if not loop.last %}, {% endif %}
                     {% endfor %}

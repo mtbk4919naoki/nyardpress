@@ -4,7 +4,8 @@
   "type": "wordpress-muplugin",
   "require": {
     "php": ">=7.4",
-    "htmlburger/carbon-fields": "^3.6"
+    "htmlburger/carbon-fields": "^3.6",
+    "twig/twig": "^3.22"
   },
   "autoload": {
     "psr-4": {
@@ -20,4 +21,3 @@
     }
   }
 }
-

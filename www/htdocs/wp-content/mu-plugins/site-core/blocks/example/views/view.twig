@@ -1,0 +1,36 @@
+{# ブロック: Example #}
+<div class="{{ block_class }}">
+	{% if content %}
+		<div class="{{ block_class }}__content">
+			{{ content|raw }}
+		</div>
+	{% endif %}
+
+	{% if number > 0 %}
+		<div class="{{ block_class }}__number">
+			<p>数字: {{ number }}</p>
+		</div>
+	{% endif %}
+
+	{% if imageUrl %}
+		<div class="{{ block_class }}__image">
+			<img src="{{ imageUrl }}" alt="{{ imageAlt }}" />
+		</div>
+	{% endif %}
+
+	{% if url %}
+		<div class="{{ block_class }}__link">
+			<a href="{{ url }}">{{ urlText ?: url }}</a>
+		</div>
+	{% endif %}
+
+	{% if repeat %}
+		<div class="{{ block_class }}__repeat">
+			{% for item in repeat %}
+				<div class="{{ block_class }}__repeat-item">
+					{# 繰り返し項目の内容をここに記述 #}
+				</div>
+			{% endfor %}
+		</div>
+	{% endif %}
+</div>
