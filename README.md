@@ -89,6 +89,9 @@ database: wordpress
 テーマ名は`nyardpress.config.json`から自動的に読み込まれます。
 
 ```bash
+# npmのインストール
+npm ci
+
 # 環境変数設定、Composer依存関係のインストール、Dockerコンテナのビルドと起動（推奨）
 npm run setup
 ```
