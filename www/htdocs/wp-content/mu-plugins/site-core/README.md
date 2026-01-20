@@ -169,46 +169,48 @@ npm run build
 
 ```json
 {
-  "enabled": [
+  "disabled": [
     "example"
   ],
-  "disabled": [
-    "sample"
-  ],
-  "disabledCoreBlocks": [
-    "_core/paragraph",
-    "_core/image",
-    "core/heading"
+  "allowedBlocks": [
+    "core/paragraph",
+    "core/heading",
+    "core/list",
+    "core/image"
   ]
 }
 ```
 
 **設定項目：**
 
-- `enabled`: 有効化するカスタムブロックのディレクトリ名の配列。空でない場合、リストに含まれるブロックのみが登録されます。
-- `disabled`: 無効化するカスタムブロックのディレクトリ名の配列。
-- `disabledCoreBlocks`: 無効化するWordPressコアブロック名の配列。
+- `disabled`: 無効化するカスタムブロックのディレクトリ名の配列。先頭にアンダースコア（`_`）を付けると無視されます（コメント用）。
+- `allowedBlocks`: 利用可能なブロックのホワイトリスト。このリストに記載されたブロックのみがエディターで使用可能になります。
 
-**コアブロックの無効化方法：**
+**ホワイトリスト方式のメリット：**
 
-- ブロック名の先頭にアンダースコア（`_`）を付けると、そのブロックは無効化されません（コメント扱い）
-- アンダースコアを外すと、そのブロックが無効化されます
-- 例：`"_core/paragraph"` → 有効、`"core/paragraph"` → 無効
+- WordPress更新時に新しいブロックが自動的に追加されても、リストにないものは表示されません
+- 明示的に許可したブロックのみが使用可能になるため、セキュリティと管理が向上します
+- カスタムブロック（`nya/`で始まるブロック）は自動的に許可リストに追加されます
 
-これにより、一覧を見ながら有効/無効を切り替えやすくなります。
+**設定方法：**
+
+- `allowedBlocks`が空または未設定の場合: すべてのブロックが許可されます（従来の動作）
+- `allowedBlocks`が設定されている場合: リストに記載されたブロックのみが許可されます
+- 先頭アンダースコア（`_`）で始まる設定は無視されます（コメント用）
 
 **コアブロック一覧：**
 
-コアブロックの完全な一覧は`disabledCoreBlocks`に記載されています（すべてアンダースコア付きでデフォルト有効）。参考: [Gutenbergコアのブロック名一覧](https://zenn.dev/shimomura/articles/gutenberg-block-list)
+コアブロックの完全な一覧は`allowedBlocks`に記載されています。参考: [Gutenbergコアのブロック名一覧](https://zenn.dev/shimomura/articles/gutenberg-block-list)
 
-### ブロック用CSSの読み込み
+### ブロック用CSS・JavaScriptの読み込み
 
-ブロック用のCSSファイルは自動的に読み込まれます：
+ブロック用のCSS・JavaScriptファイルは自動的に読み込まれます：
 
-- **フロントエンド用**: `blocks/style.css` - `wp_enqueue_scripts`フックで読み込まれます
-- **エディター用**: `blocks/editor.css` - `enqueue_block_editor_assets`フックで読み込まれます
+- **フロントエンド用CSS**: `blocks/style.css` - `wp_enqueue_scripts`フックで読み込まれます
+- **フロントエンド用JavaScript**: `blocks/script.js` - `wp_enqueue_scripts`フックで読み込まれます（`</body>`の前に出力）
+- **エディター用CSS**: `blocks/editor.css` - `enqueue_block_editor_assets`フックで読み込まれます
 
-両方のファイルは存在する場合のみ読み込まれます。すべてのカスタムブロックのスタイルをこれらのファイルに記述してください。
+すべてのファイルは存在する場合のみ読み込まれます。すべてのカスタムブロックのスタイルとスクリプトをこれらのファイルに記述してください。
 
 ### デフォルトの属性
 

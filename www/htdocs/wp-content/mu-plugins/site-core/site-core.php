@@ -30,7 +30,7 @@ require_once __DIR__ . '/utilities/use_transient.php';
 load_php_files(__DIR__ . '/utilities');
 
 // ブロック管理
-// require_once __DIR__ . '/blocks/blocks.php';
+require_once __DIR__ . '/blocks/blocks.php';
 
 add_action('carbon_fields_register_fields', function () {
     // カスタム投稿タイプを読み込む
@@ -41,8 +41,4 @@ add_action('carbon_fields_register_fields', function () {
 
     // カスタムフィールドを読み込む
     load_php_files(__DIR__ . '/fields');
-
-    // Gutenbergブロックを読み込む
-    load_php_files(__DIR__ . '/blocks');
 });
-
