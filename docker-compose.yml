@@ -10,8 +10,7 @@ services:
   # MySQLデータベースコンテナ
   db:
     image: mysql:8.0
-    # コンテナ名: 固定値（安定性重視）
-    container_name: nyardpress_db
+    container_name: ${THEME_NAME:-nyardpress}_db
     restart: always
     environment:
       MYSQL_DATABASE: wordpress
@@ -19,13 +18,11 @@ services:
       MYSQL_PASSWORD: wordpress
       MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
-      # ボリューム名: 固定値（データベースのデータを永続化）
-      - nyardpress_db_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
     ports:
       - "${DB_PORT:-3306}:3306"
     networks:
-      # ネットワーク名: 固定値
-      - nyardpress-network
+      - app-network
 
   # WordPressコンテナ
   wordpress:
@@ -33,7 +30,7 @@ services:
       context: .
       dockerfile: ./docker/Dockerfile
     # コンテナ名: 固定値（安定性重視）
-    container_name: nyardpress_wordpress
+    container_name: ${THEME_NAME:-nyardpress}_wordpress
     restart: always
     env_file:
       - .env
@@ -51,17 +48,23 @@ services:
       WP_DEBUG_DISPLAY: ${WP_DEBUG_DISPLAY:-true}
       WP_DEBUG_LOG: ${WP_DEBUG_LOG:-true}
       WP_DEBUG_LOG_FILE: ${WP_DEBUG_LOG_FILE:-/var/www/html/docker/log/debug.log}
+      WP_ROOT: ${WP_ROOT:-/var/www/html}
+    # サブディレクトリにwordpressをインストールする場合は設定を変える
+    working_dir: ${WP_ROOT:-/var/www/html}
     volumes:
       # テーマディレクトリをマウント（ホスト側で編集可能）
-      - ./www/htdocs/wp-content/themes:/var/www/html/wp-content/themes
+      - ./www/htdocs/wp-content/themes:${WP_ROOT:-/var/www/html}/wp-content/themes
       # プラグインディレクトリをマウント（永続化、composer.jsonでプラグイン管理）
-      - ./www/htdocs/wp-content/plugins:/var/www/html/wp-content/plugins
+      - ./www/htdocs/wp-content/plugins:${WP_ROOT:-/var/www/html}/wp-content/plugins
       # MUプラグインディレクトリをマウント
-      - ./www/htdocs/wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
+      - ./www/htdocs/wp-content/mu-plugins:${WP_ROOT:-/var/www/html}/wp-content/mu-plugins
       # 言語パックディレクトリをマウント（永続化）
-      - ./www/htdocs/wp-content/languages:/var/www/html/wp-content/languages
+      - ./www/htdocs/wp-content/languages:${WP_ROOT:-/var/www/html}/wp-content/languages
       # アップロードファイルをマウント（永続化）
-      - ./www/htdocs/wp-content/uploads:/var/www/html/wp-content/uploads
+      - ./www/htdocs/wp-content/uploads:${WP_ROOT:-/var/www/html}/wp-content/uploads
+      # その他ファイル群
+      # @TODO ルートにファイルを置くと逆に通常のwp core installできなくなるので一旦コメントアウト
+      #- ./www/htdocs/.htaccess:/var/www/html/.htaccess
       # スクリプトディレクトリをマウント（開発環境用：ホスト側での編集が即座に反映）
       - ./docker/bin:/opt/docker/bin
       # ログディレクトリをマウント
@@ -77,20 +80,18 @@ services:
       - db
       - mailpit
     networks:
-      # ネットワーク名: 固定値
-      - nyardpress-network
+      - app-network
 
   # Mailpit（開発環境用メールサーバー）コンテナ
   mailpit:
     image: axllent/mailpit:latest
-    container_name: nyardpress_mailpit
+    container_name: ${THEME_NAME:-nyardpress}_mailpit
     restart: always
     ports:
       - "${SMTP_PORT:-1025}:1025"  # SMTPポート
       - "${MAILPIT_PORT:-8025}:8025"  # Web UIポート
     networks:
-      # ネットワーク名: 固定値
-      - nyardpress-network
+      - app-network
     environment:
       MP_SMTP_BIND_ADDR: 0.0.0.0:1025
       MP_WEB_BIND_ADDR: 0.0.0.0:8025
@@ -102,10 +103,8 @@ services:
 # ボリューム名: nyardpress_db_data（固定値）
 # ============================================
 volumes:
-  # 注意: nyardpress_wordpress_dataは使用していません
-  # 全体を永続化する場合は、個別マウントを削除して以下を有効化してください：
-  # nyardpress_wordpress_data:
-  nyardpress_db_data:
+  db_data:
+    name: ${THEME_NAME:-nyardpress}_db_data
 
 # ============================================
 # ネットワーク定義
@@ -114,6 +113,7 @@ volumes:
 # ネットワーク名: nyardpress-network（固定値）
 # ============================================
 networks:
-  nyardpress-network:
+  app-network:
+    name: ${THEME_NAME:-nyardpress}-network
     driver: bridge
 

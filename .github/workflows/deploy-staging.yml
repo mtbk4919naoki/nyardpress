@@ -1,0 +1,42 @@
+name: 🎯 ステージング環境へのデプロイ
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 静的アセット（公開領域のルート）のデプロイ
+      # 必要に応じてコメントを外して有効化してください
+      # - name: Deploy assets
+      #   uses: burnett01/rsync-deployments@6.0.0
+      #   with:
+      #     switches: -avzr --delete --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='*.log'
+      #     path: www/htdocs/assets/
+      #     remote_path: ${{ vars.ASSET_PATH }}
+      #     remote_host: ${{ secrets.SSH_HOST }}
+      #     remote_port: ${{ secrets.SSH_PORT }}
+      #     remote_user: ${{ secrets.SSH_USERNAME }}
+      #     remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # WordPressテーマのデプロイ
+      - name: Deploy theme
+        uses: burnett01/rsync-deployments@6.0.0
+        with:
+          switches: -avzr --delete --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='*.log'
+          path: www/htdocs/wp-content/themes/nyardpress/
+          remote_path: ${{ vars.THEME_PATH }}
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_port: ${{ secrets.SSH_PORT }}
+          remote_user: ${{ secrets.SSH_USERNAME }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deployment notification
+        if: success()
+        run: echo "✅ Theme deployed successfully to staging - ${{ secrets.SSH_HOST }}"

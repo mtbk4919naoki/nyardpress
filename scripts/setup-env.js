@@ -99,6 +99,7 @@ async function main() {
 
   // 設定ファイルからテーマ名を.envファイルに書き込む（docker-compose.ymlで環境変数として使用）
   env.THEME_NAME = config.themeName;
+  env.WP_ROOT = config.wpRoot;
 
   // .envファイルを保存
   saveEnvFile(envPath, env);
@@ -111,6 +112,7 @@ async function main() {
   console.log(`   SMTPポート: ${env.SMTP_PORT}`);
   console.log(`   Mailpitポート: ${env.MAILPIT_PORT}`);
   console.log(`   テーマ名: ${config.themeName}`);
+  console.log(`   WPインストールディレクトリ: ${config.wpRoot}`);
 
   rl.close();
 }

@@ -6,8 +6,9 @@
 
 set -euo pipefail
 
-# WordPressのドキュメントルート（引数から取得、デフォルトは/var/www/html）
-WP_ROOT="${1:-/var/www/html}"
+# WordPressのドキュメントルート（環境変数から取得、デフォルトは/var/www/html）
+WP_ROOT="${WP_ROOT:-/var/www/html}"
+WP_DIR_NAME=$(basename "$WP_ROOT")
 
 echo ""
 echo "=========================================="
@@ -131,6 +132,24 @@ if [ -d "$PLUGINS_DIR" ]; then
 fi
 
 echo "✅ デフォルトテーマ・プラグインの削除が完了しました"
+
+# 公式のindex.phpを書き換えてwp-contentを削除する
+echo "WP_ROOT: $WP_ROOT"
+echo "WP_DIR_NAME: $WP_DIR_NAME"
+if [ "$WP_DIR_NAME" != "html" ]; then
+    echo "ℹ️ サブディレクトリにwordpressをインストールしているため構成を変更します..."
+
+    echo "  📝 index.phpを書き換えています (WP_DIR_NAME: $WP_DIR_NAME)..."
+    cp /var/www/html/$WP_DIR_NAME/index.php /var/www/html/index.php
+    sed -i "s|'/wp-blog-header\.php'|'/$WP_DIR_NAME/wp-blog-header.php'|g" /var/www/html/index.php
+    echo "  ✅ index.phpを書き換えました"
+
+    echo "  🗑️ wp-contentを削除しています..."
+    rm -rf /var/www/html/wp-content
+    echo "  ✅ wp-contentを削除しました"
+
+    echo "✅ 構成変更が完了しました"
+fi
 
 echo ""
 echo "=========================================="

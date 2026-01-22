@@ -16,8 +16,8 @@ console.log('📦 テーマとプラグインのComposer依存関係とnpm依存
 // Composer installを実行するディレクトリのリスト
 const composerDirs = [
   'www/htdocs/wp-content/plugins',
-  `www/htdocs/wp-content/themes/${themeName}`,
-  'www/htdocs/wp-content/mu-plugins/site-core'
+  // `www/htdocs/wp-content/themes/${themeName}`,
+  // 'www/htdocs/wp-content/mu-plugins/site-core'
 ];
 
 let hasError = false;

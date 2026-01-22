@@ -89,7 +89,7 @@ database: wordpress
 テーマ名は`nyardpress.config.json`から自動的に読み込まれます。
 
 ```bash
-# npmのインストール
+# npmインストール
 npm ci
 
 # 環境変数設定、Composer依存関係のインストール、Dockerコンテナのビルドと起動（推奨）
@@ -372,6 +372,51 @@ docker exec -it nyardpress_wordpress wp core is-installed --allow-root
 docker exec -it nyardpress_wordpress rm /var/www/html/wp-config.php
 docker compose restart wordpress
 ```
+
+## デプロイ
+
+このプロジェクトでは、GitHub Actionsを使用してテーマをXServerへデプロイできます。
+
+### デプロイ環境
+
+- **Staging（ステージング環境）**: 開発・テスト用
+- **Production（本番環境）**: 本番サイト
+
+### デプロイの設定
+
+詳細な設定手順は [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) を参照してください。
+
+### 必要なGitHub Environment設定
+
+各環境（`staging`、`production`）にそれぞれ以下を設定します：
+
+**Secrets:**
+- `SSH_HOST` - サーバーのホスト名
+- `SSH_PORT` - SSHポート番号（通常10022）
+- `SSH_USERNAME` - SSH接続用ユーザー名
+- `SSH_PRIVATE_KEY` - SSH秘密鍵
+
+**Variables:**
+- `THEME_PATH` - テーマのデプロイ先パス
+- `ASSET_PATH` - 静的アセットのデプロイ先パス（オプション）
+
+### デプロイ方法
+
+#### Stagingへのデプロイ
+
+1. GitHubリポジトリの `Actions` タブを開く
+2. `Deploy Theme to XServer (Staging)` ワークフローを選択
+3. `Run workflow` ボタンをクリックして手動実行
+
+#### Productionへのデプロイ
+
+1. GitHubリポジトリの `Actions` タブを開く
+2. `Deploy Theme to XServer` ワークフローを選択
+3. `Run workflow` ボタンをクリックして手動実行
+
+**推奨ワークフロー**: Staging環境で動作確認後、Production環境へデプロイ
+
+**注意**: 本番環境への誤デプロイを防ぐため、自動デプロイは無効化されています。
 
 ## ライセンス
 

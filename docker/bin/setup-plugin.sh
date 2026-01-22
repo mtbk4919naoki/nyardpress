@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-# WordPressのドキュメントルート（引数から取得、デフォルトは/var/www/html）
-WP_ROOT="${1:-/var/www/html}"
+# WordPressのドキュメントルート（環境変数から取得、デフォルトは/var/www/html）
+WP_ROOT="${WP_ROOT:-/var/www/html}"
 
 echo ""
 echo "標準プラグインをアクティベート中..."

@@ -141,7 +141,8 @@ www/htdocs/wp-content/themes/*/tsconfig.tsbuildinfo
 # ============================================
 .docker/
 # ダンプファイル（エクスポートされたファイル）
-!docker/dump/*
+docker/dump/*
+!docker/dump/.gitkeep
 # ログディレクトリ（すべてのファイルを除外）
 docker/log/*
 !docker/log/.gitkeep

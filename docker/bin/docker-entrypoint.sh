@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-WP_ROOT="/var/www/html"
+WP_ROOT="${WP_ROOT:-/var/www/html}"
 
 # WordPressの標準エントリーポイントを実行（wp-config.phpの生成など）
 # 注意: WordPressの公式イメージは、/var/www/htmlが空の場合にwp core downloadを実行します
@@ -59,7 +59,7 @@ fi
 # wp-config.phpが生成されるまで少し待機
 echo "wp-config.phpの生成を待機中..."
 for i in {1..30}; do
-    if [ -f /var/www/html/wp-config.php ]; then
+    if [ -f "$WP_ROOT/wp-config.php" ]; then
         echo "wp-config.phpが生成されました"
         break
     fi
@@ -67,19 +67,19 @@ for i in {1..30}; do
 done
 
 # 初期化処理を実行（毎回実行）
-/opt/docker/bin/init.sh "$WP_ROOT"
+/opt/docker/bin/init.sh
 
 # setup.shを実行（初回起動時のみ）
 # WordPressのインストール状態を直接確認（wp core is-installedで判定）
 if [ -f /opt/docker/bin/setup.sh ]; then
     # WordPressのインストール状態を確認（データベース接続が必要）
     # wp-config.phpが存在し、WordPressがインストール済みか確認
-    if [ -f /var/www/html/wp-config.php ]; then
+    if [ -f "$WP_ROOT/wp-config.php" ]; then
         # wp core is-installedで判定（データベース接続が必要なので、接続確認後に実行）
-        if wp core is-installed --allow-root --path="/var/www/html" 2>/dev/null; then
+        if wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
             echo "ℹ️  WordPressは既にインストール済みです"
             # post-setup.shでWordPress設定を実行
-            /opt/docker/bin/post-setup.sh "$WP_ROOT" || true
+            /opt/docker/bin/post-setup.sh || true
         else
             echo "=========================================="
             echo "🚀 WordPressが未インストールのため、setup.shを実行中..."
@@ -93,7 +93,7 @@ if [ -f /opt/docker/bin/setup.sh ]; then
                 echo "✅ setup.shの実行が完了しました"
                 echo "=========================================="
                 # setup.sh完了後、WordPress設定を実行
-                /opt/docker/bin/post-setup.sh "$WP_ROOT" || true
+                /opt/docker/bin/post-setup.sh || true
             else
                 echo "=========================================="
                 echo "⚠️  setup.shの実行に失敗しました (終了コード: $setup_exit_code)"
@@ -115,7 +115,7 @@ if [ -f /opt/docker/bin/setup.sh ]; then
             echo "✅ setup.shの実行が完了しました"
             echo "=========================================="
             # setup.sh完了後、WordPress設定を実行
-            /opt/docker/bin/post-setup.sh "$WP_ROOT" || true
+            /opt/docker/bin/post-setup.sh || true
         else
             echo "=========================================="
             echo "⚠️  setup.shの実行に失敗しました (終了コード: $setup_exit_code)"

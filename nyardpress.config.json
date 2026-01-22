@@ -1,4 +1,5 @@
 {
-  "themeName": "nyardpress"
+  "themeName": "nyardpress",
+  "wpRoot": "/var/www/html"
 }
 

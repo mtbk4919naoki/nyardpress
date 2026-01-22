@@ -13,8 +13,8 @@ set -uo pipefail
 # 注意: set -e を外しています（エラーが発生してもスクリプトを続行）
 # 各コマンドで明示的にエラーハンドリングを行います
 
-# WordPressのドキュメントルート
-WP_ROOT="/var/www/html"
+# WordPressのドキュメントルート（環境変数から取得、デフォルトは/var/www/html）
+WP_ROOT="${WP_ROOT:-/var/www/html}"
 
 # Composer installはホスト側で実行する前提
 # プラグイン、テーマ、MUプラグインは既にインストールされていることを想定
@@ -68,6 +68,13 @@ if ! wp core is-installed --allow-root --path="$WP_ROOT" 2>/dev/null; then
     # wp-config.phpが存在しない場合は生成、存在する場合はデータベース接続情報を更新
     if [ ! -f "$WP_ROOT/wp-config.php" ]; then
         echo "wp-config.phpを生成中..."
+
+        # WP_ROOTに古いwp-config.phpが存在する場合は削除
+        if [ -f "$WP_ROOT/wp-config.php" ]; then
+            echo "古いwp-config.phpを削除中..."
+            rm -f "$WP_ROOT/wp-config.php" || true
+        fi
+
         wp config create \
             --dbname="$DB_NAME" \
             --dbuser="$DB_USER" \
@@ -213,7 +220,7 @@ if [ -f "$WP_ROOT/wp-config.php" ]; then
     echo "    // docker/logディレクトリに出力" >> "$WP_ROOT/wp-config.php"
     echo "    \$log_dir = ABSPATH . 'docker/log';" >> "$WP_ROOT/wp-config.php"
     echo "    if (!file_exists(\$log_dir)) {" >> "$WP_ROOT/wp-config.php"
-    echo "        wp_mkdir_p(\$log_dir);" >> "$WP_ROOT/wp-config.php"
+    echo "        @mkdir(\$log_dir, 0755, true);" >> "$WP_ROOT/wp-config.php"
     echo "    }" >> "$WP_ROOT/wp-config.php"
     echo "    ini_set('error_log', \$log_dir . '/php-error.log');" >> "$WP_ROOT/wp-config.php"
     echo "    ini_set('display_errors', 1);" >> "$WP_ROOT/wp-config.php"
@@ -222,6 +229,16 @@ if [ -f "$WP_ROOT/wp-config.php" ]; then
     echo "}" >> "$WP_ROOT/wp-config.php"
 
     echo "✅ デバッグ設定を更新しました (WP_DEBUG=$WP_DEBUG_VALUE)"
+
+    # SSL接続を無効化（Docker環境用）
+    # MYSQL_CLIENT_FLAGSが既に設定されているか確認
+    if ! wp config has MYSQL_CLIENT_FLAGS --allow-root --path="$WP_ROOT" 2>/dev/null; then
+        echo "SSL接続を無効化する設定を追加中..."
+        wp config set MYSQL_CLIENT_FLAGS 0 --raw --allow-root --path="$WP_ROOT" || echo "⚠️  MYSQL_CLIENT_FLAGSの設定に失敗しました"
+        echo "✅ SSL接続無効化設定を追加しました"
+    else
+        echo "✅ SSL接続無効化設定は既に存在します"
+    fi
 fi
 
 # WordPressがインストールされている場合、設定を実行
