@@ -47,8 +47,10 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 yarn.lock
+pnpm-lock.yaml
+bun.lock
+bun.lockb
 
 # ============================================
 # ビルド成果物
@@ -86,6 +88,7 @@ Thumbs.db
 .project
 .idea/
 .vscode/
+.claude/
 *.sublime-project
 *.sublime-workspace
 
@@ -128,8 +131,8 @@ www/htdocs/wp-content/languages/*
 www/htdocs/wp-content/themes/*/src/
 www/htdocs/wp-content/themes/*/dev/
 www/htdocs/wp-content/themes/*/node_modules/
-www/htdocs/wp-content/themes/*/package-lock.json
 www/htdocs/wp-content/themes/*/yarn.lock
+www/htdocs/wp-content/themes/*/pnpm-lock.yaml
 www/htdocs/wp-content/themes/*/.env
 www/htdocs/wp-content/themes/*/.env.local
 www/htdocs/wp-content/themes/*/dist/
