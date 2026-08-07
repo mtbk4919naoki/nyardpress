@@ -21,6 +21,7 @@
     "chaindrop:sync": "node scripts/chaindrop-sync.mjs"
   },
   "private": true,
+  "trustedDependencies": [],
   "devDependencies": {
     "npm-run-all2": "^8.0.4"
   }
