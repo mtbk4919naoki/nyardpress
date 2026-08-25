@@ -15,13 +15,9 @@
     "dc:start": "docker compose up -d",
     "dc:dump": "node scripts/dc-dump.js",
     "dc:restore": "node scripts/dc-restore.js",
-    "dc:restore:latest": "node scripts/dc-restore.js --latest",
-    "chaindrop:scan": "node scripts/chaindrop-scan.mjs",
-    "chaindrop:scan:fetch": "node scripts/chaindrop-scan.mjs --fetch",
-    "chaindrop:sync": "node scripts/chaindrop-sync.mjs"
+    "dc:restore:latest": "node scripts/dc-restore.js --latest"
   },
   "private": true,
-  "trustedDependencies": [],
   "devDependencies": {
     "npm-run-all2": "^8.0.4"
   }
