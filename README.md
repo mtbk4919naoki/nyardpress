@@ -377,6 +377,8 @@ docker compose restart wordpress
 
 このプロジェクトでは、GitHub Actionsを使用してテーマをXServerへデプロイできます。
 
+初回の本番・ステージングへの WordPress 本体設置、`wp-config.php`、`.htaccess`、ログディレクトリなどは [docs/Production-WordPress-setup.md](docs/Production-WordPress-setup.md) を参照してください。
+
 ### デプロイ環境
 
 - **Staging（ステージング環境）**: 開発・テスト用
@@ -384,7 +386,7 @@ docker compose restart wordpress
 
 ### デプロイの設定
 
-詳細な設定手順は [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) を参照してください。
+テーマの継続デプロイ設定は [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md) を参照してください。
 
 ### 必要なGitHub Environment設定
 

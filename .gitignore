@@ -15,6 +15,7 @@
 www/htdocs/wp-admin/
 www/htdocs/wp-includes/
 www/htdocs/wp-*.php
+!www/htdocs/wp-config.sample.php
 www/htdocs/xmlrpc.php
 www/htdocs/readme.html
 www/htdocs/license.txt
@@ -25,7 +26,7 @@ www/htdocs/index.php
 # ============================================
 www/htdocs/wp-config.php
 www/htdocs/wp-config.php.bak
-www/htdocs/.htaccess
+# .htaccess はセキュリティ設定テンプレとして追跡する
 
 # ============================================
 # Composer
@@ -67,6 +68,12 @@ build/
 logs/
 www/htdocs/wp-content/debug.log
 www/htdocs/wp-content/*.log
+
+# 設置用ログディレクトリ（.htaccess と空の debug.log だけ追跡）
+# 実行時に増えたログは無視。デプロイは *.log 除外で上書きしない
+www/htdocs/log/*
+!www/htdocs/log/.htaccess
+!www/htdocs/log/debug.log
 
 # ============================================
 # データベース

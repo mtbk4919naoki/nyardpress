@@ -17,7 +17,7 @@ jobs:
       # - name: Deploy assets
       #   uses: burnett01/rsync-deployments@6.0.0
       #   with:
-      #     switches: -avzr --delete --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='*.log'
+      #     switches: -avzr --delete --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='*.log' --exclude='log/*.log'
       #     path: www/htdocs/assets/
       #     remote_path: ${{ vars.ASSET_PATH }}
       #     remote_host: ${{ secrets.SSH_HOST }}
@@ -29,7 +29,7 @@ jobs:
       - name: Deploy theme
         uses: burnett01/rsync-deployments@6.0.0
         with:
-          switches: -avzr --delete --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='*.log'
+          switches: -avzr --delete --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='*.log' --exclude='log/*.log'
           path: www/htdocs/wp-content/themes/nyardpress/
           remote_path: ${{ vars.THEME_PATH }}
           remote_host: ${{ secrets.SSH_HOST }}

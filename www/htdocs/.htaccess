@@ -1,0 +1,105 @@
+# ============================================
+# WordPress .htaccess
+# ============================================
+
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+
+# ============================================
+# Basic認証
+# 有効化時: 各行先頭の # を外し、AuthUserFile を絶対パスに変更
+# htpasswd 例: htpasswd -c /path/to/.htpasswd username
+# ============================================
+# AuthUserFile "/path/to/.htpasswd"
+# AuthName "Member Site"
+# AuthType Basic
+# Require valid-user
+# <Files "wp-cron.php">
+#     Require all granted
+# </Files>
+
+# ============================================
+# セキュリティ設定: 秘匿ファイルへのアクセスを拒否
+# ============================================
+
+# .非表示ファイルへのアクセスを拒否
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# .envファイルを明示的に拒否
+<Files ".env">
+    Require all denied
+</Files>
+
+# vendorディレクトリへのアクセスを拒否
+<IfModule mod_rewrite.c>
+    RewriteRule ^vendor/ - [F,L]
+    RewriteRule ^.*/vendor/ - [F,L]
+</IfModule>
+
+# composer.json, composer.lockへのアクセスを拒否
+<FilesMatch "^(composer\.json|composer\.lock)$">
+    Require all denied
+</FilesMatch>
+
+# package.json, package-lock.jsonへのアクセスを拒否
+<FilesMatch "^(package\.json|package-lock\.json|yarn\.lock)$">
+    Require all denied
+</FilesMatch>
+
+# .git関連ファイルへのアクセスを拒否
+<FilesMatch "^\.git">
+    Require all denied
+</FilesMatch>
+
+# 設定ファイルへのアクセスを明示的に拒否
+<FilesMatch "^(\.gitignore|\.gitattributes|\.editorconfig|\.htaccess)$">
+    Require all denied
+</FilesMatch>
+
+# ログファイルへのアクセスを拒否
+<FilesMatch "\.log$">
+    Require all denied
+</FilesMatch>
+
+# SQLファイルへのアクセスを拒否
+<FilesMatch "\.sql$">
+    Require all denied
+</FilesMatch>
+
+# 一時ファイルへのアクセスを拒否
+<FilesMatch "\.(tmp|temp|bak|backup|old)$">
+    Require all denied
+</FilesMatch>
+
+# XML-RPCを拒否
+<Files "xmlrpc.php">
+    Require all denied
+</Files>
+<IfModule mod_rewrite.c>
+    RewriteRule ^xmlrpc\.php$ - [F,L]
+</IfModule>
+
+# ============================================
+# セキュリティヘッダー（オプション）
+# ============================================
+<IfModule mod_headers.c>
+    # XSS保護
+    Header set X-XSS-Protection "1; mode=block"
+    # クリックジャッキング保護
+    Header set X-Frame-Options "SAMEORIGIN"
+    # MIMEタイプスニッフィング保護
+    Header set X-Content-Type-Options "nosniff"
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
