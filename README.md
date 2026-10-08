@@ -186,7 +186,7 @@ nyardpress/
 │   │   │       ├── fields/       # Carbon Fields設定
 │   │   │       └── utilities/    # ユーティリティ関数
 │   │   └── plugins/
-│   └── .htaccess            # Apache設定（セキュリティ含む）
+│   └── .htaccess.sample     # Apache設定テンプレ（本番は .htaccess にコピー）
 └── docker-compose.yml       # Docker Compose設定
 ```
 
@@ -344,13 +344,14 @@ npm run type-check
 
 ## セキュリティ
 
-`.htaccess`で以下のファイルへのアクセスが自動的に拒否されます：
+`.htaccess.sample`（本番では `.htaccess` にコピー）で以下へのアクセスを拒否できます：
 
 - `.env`ファイル
 - `vendor`ディレクトリ
 - `composer.json`, `composer.lock`
 - `.git`関連ファイル
 - ログファイル、SQLファイル
+- `xmlrpc.php`
 
 ## トラブルシューティング
 
@@ -377,7 +378,7 @@ docker compose restart wordpress
 
 このプロジェクトでは、GitHub Actionsを使用してテーマをXServerへデプロイできます。
 
-初回の本番・ステージングへの WordPress 本体設置、`wp-config.php`、`.htaccess`、ログディレクトリなどは [docs/Production-WordPress-setup.md](docs/Production-WordPress-setup.md) を参照してください。
+初回の本番・ステージングへの WordPress 本体設置、`wp-config.php`、`.htaccess.sample`、ログディレクトリなどは [docs/Production-WordPress-setup.md](docs/Production-WordPress-setup.md) を参照してください。
 
 ### デプロイ環境
 

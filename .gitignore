@@ -26,7 +26,8 @@ www/htdocs/index.php
 # ============================================
 www/htdocs/wp-config.php
 www/htdocs/wp-config.php.bak
-# .htaccess はセキュリティ設定テンプレとして追跡する
+www/htdocs/.htaccess
+# テンプレは .htaccess.sample を追跡（本番の .htaccess は上書きしない）
 
 # ============================================
 # Composer

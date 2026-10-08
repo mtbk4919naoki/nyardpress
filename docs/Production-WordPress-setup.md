@@ -41,9 +41,9 @@ nyardpress リポジトリには WordPress 本体（`wp-admin` など）は含�
 | `wp-content/themes/nyardpress/` | テーマ（ビルド済み） |
 | `wp-content/mu-plugins/site-core/` | MU プラグイン（Composer の `vendor` 含む） |
 | `wp-content/plugins/` | 必要なプラグイン（Composer 利用時は `vendor` も） |
-| `.htaccess` | リポジトリ同梱のセキュリティ設定付き |
+| `.htaccess` | `.htaccess.sample` をコピーして作成 |
 | `log/` | `.htaccess` と空の `debug.log` |
-| `wp-config.php` | サンプルから作成（次節） |
+| `wp-config.php` | `wp-config.sample.php` から作成（次節） |
 
 `uploads` は初回は空でよいです。メディア移行がある場合は別途コピーします。
 
@@ -84,7 +84,13 @@ define( 'WP_DEBUG_LOG', __DIR__ . '/log/debug.log' );
 
 ### 5. .htaccess
 
-リポジトリの `.htaccess` をドキュメントルートに置きます。主な内容:
+本番の `.htaccess` は Git 管理外です。テンプレからコピーして作ります。
+
+```bash
+cp .htaccess.sample .htaccess
+```
+
+デプロイで上書きされないよう、リポジトリに載せているのは `.htaccess.sample` だけです。主な内容:
 
 - WordPress パーマリンク用ルール（`# BEGIN WordPress` 〜 `# END WordPress`）
 - 秘匿ファイル・`vendor`・ログ・SQL などへのアクセス拒否
@@ -144,16 +150,16 @@ npm run build
 
 GitHub Actions の標準設定は**テーマディレクトリのみ**を rsync します。初回の本体・`wp-config.php`・`.htaccess`・`log/`・MU プラグインは手動または別手段で置きます。
 
-ログを消さないため、rsync では `*.log` と `log/*.log` を除外しています。空の `debug.log` を毎回上書き転送しないでください。
+ログと本番 `.htaccess` を消さないため、rsync では `*.log`・`log/*.log`・`.htaccess` を除外しています。空の `debug.log` やサーバー固有の `.htaccess` を毎回上書きしないでください。
 
-`wp-config.php` と本番の `.htaccess`（Basic 認証を有効化した状態など）は Git 管理外です。サーバー上の実ファイルをデプロイで潰さないこと。
+`wp-config.php` と本番の `.htaccess` は Git 管理外です。リポジトリにあるのは `wp-config.sample.php` と `.htaccess.sample` だけです。
 
 ## 関連ファイル
 
 | ファイル | 用途 |
 |----------|------|
 | `www/htdocs/wp-config.sample.php` | 本番用設定例 |
-| `www/htdocs/.htaccess` | セキュリティ・XML-RPC・Basic 認証テンプレ |
+| `www/htdocs/.htaccess.sample` | セキュリティ・XML-RPC・Basic 認証テンプレ（本番はコピーして使う） |
 | `www/htdocs/log/` | デバッグログ置き場（Web 拒否済み） |
 | [.github/DEPLOYMENT.md](../.github/DEPLOYMENT.md) | テーマの GitHub Actions デプロイ |
 | [Database-migration-with-WP-CLI.md](Database-migration-with-WP-CLI.md) | DB 移行（開発向けが多いが手順の参考） |
