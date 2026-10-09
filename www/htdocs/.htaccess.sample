@@ -41,12 +41,6 @@ RewriteRule . /index.php [L]
     Require all denied
 </Files>
 
-# vendorディレクトリへのアクセスを拒否
-<IfModule mod_rewrite.c>
-    RewriteRule ^vendor/ - [F,L]
-    RewriteRule ^.*/vendor/ - [F,L]
-</IfModule>
-
 # composer.json, composer.lockへのアクセスを拒否
 <FilesMatch "^(composer\.json|composer\.lock)$">
     Require all denied
